@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/datasets/dataset.v1.schema.json",
+  "title": "Dataset",
+  "description": "Dataset ana varlık şeması — KR-072 kanonik. Bir uçuş görevinden (Mission) toplanan ham veya işlenmiş veri paketini temsil eder.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "dataset_id",
+    "mission_id",
+    "field_id",
+    "drone_type",
+    "drone_serial",
+    "status",
+    "file_count",
+    "total_size_bytes",
+    "created_at"
+  ],
+  "properties": {
+    "dataset_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Dataset benzersiz kimliği (UUID v4)."
+    },
+    "mission_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Bu dataset'in ait olduğu Mission ID. mission.v1.schema.json referansı."
+    },
+    "field_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Tarla ID. field.v1.schema.json referansı."
+    },
+    "drone_type": {
+      "$ref": "../../enums/drone_type.enum.v1.json",
+      "description": "Veri toplayan drone modeli."
+    },
+    "drone_serial": {
+      "type": "string",
+      "description": "Drone seri numarası. drone_registry.yaml'da kayıtlı olmalı."
+    },
+    "status": {
+      "$ref": "../../enums/dataset_status.enum.v1.json",
+      "description": "Dataset yaşam döngüsü durumu."
+    },
+    "file_count": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Dataset içindeki dosya sayısı."
+    },
+    "total_size_bytes": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Toplam dosya boyutu (byte)."
+    },
+    "manifest_hash": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Manifest SHA-256 hash. RAW_HASH_SEALED sonrası dolar."
+    },
+    "signature": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "GPG/RSA dijital imza. Kiosk private key ile imzalanır."
+    },
+    "intake_manifest_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri-reference",
+      "description": "intake_manifest.v1 döküman referansı."
+    },
+    "calibration_result_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri-reference",
+      "description": "calibration_result.v1 döküman referansı."
+    },
+    "qc_report_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri-reference",
+      "description": "qc_report.v1 döküman referansı."
+    },
+    "rejection_reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "REJECTED_QUARANTINE durumunda red sebebi."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "archived_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  },
+  "x-kr-ref": [
+    "KR-072",
+    "KR-073"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

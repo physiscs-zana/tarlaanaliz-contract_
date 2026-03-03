@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/enums/verification_status.enum.v1.json",
+  "title": "VerificationStatus",
+  "description": "Hash/imza doğrulama sonucu — KR-073 kanonik. Manifest hash ve dosya hash'lerinin eşleşip eşleşmediğini belirtir.",
+  "type": "string",
+  "enum": [
+    "ACCEPT",
+    "REJECT"
+  ],
+  "x-enum-descriptions": {
+    "ACCEPT": "Manifest hash ve tüm dosya hash'leri eşleşiyor. Dijital imza geçerli. Dataset ilerleyebilir.",
+    "REJECT": "Hash uyuşmazlığı veya imza geçersiz. Dataset → REJECTED_QUARANTINE. reason alanında detay verilir."
+  },
+  "x-kr-ref": ["KR-073"],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

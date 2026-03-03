@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/enums/scan_stage.enum.v1.json",
+  "title": "ScanStage",
+  "description": "AV tarama aşaması — KR-073 kanonik. Edge (AV1) ve Platform (AV2) taramalarını ayırt eder.",
+  "type": "string",
+  "enum": [
+    "AV1_EDGE",
+    "AV2_PLATFORM"
+  ],
+  "x-enum-descriptions": {
+    "AV1_EDGE": "Edge kiosk tarafında yapılan ilk AV taraması. RAW_INGESTED → RAW_SCANNED_EDGE_OK geçişi için zorunlu.",
+    "AV2_PLATFORM": "Platform (merkez) tarafında yapılan ikinci AV taraması. CALIBRATED → CALIBRATED_SCANNED_CENTER_OK geçişi için zorunlu."
+  },
+  "x-kr-ref": ["KR-073"],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

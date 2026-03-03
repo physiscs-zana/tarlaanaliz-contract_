@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/edge/scan_report.v1.schema.json",
+  "title": "EdgeScanReport",
+  "description": "Edge tarafı AV1 tarama raporu — KR-073 kanonik. Kiosk'taki ilk AV taramasının sonucu.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "report_id",
+    "dataset_id",
+    "kiosk_id",
+    "engine_id",
+    "signatures_version",
+    "started_at",
+    "ended_at",
+    "result"
+  ],
+  "properties": {
+    "report_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "dataset_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "kiosk_id": {
+      "type": "string"
+    },
+    "engine_id": {
+      "type": "string"
+    },
+    "signatures_version": {
+      "type": "string"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ended_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "scanned_file_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "result": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "FAIL"
+      ]
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "threat_name": {
+            "type": "string"
+          },
+          "action_taken": {
+            "type": "string",
+            "enum": [
+              "QUARANTINED",
+              "DELETED",
+              "LOGGED"
+            ]
+          }
+        }
+      }
+    },
+    "quarantined": {
+      "type": "boolean"
+    }
+  },
+  "x-kr-ref": [
+    "KR-073"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

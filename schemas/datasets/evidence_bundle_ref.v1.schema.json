@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/datasets/evidence_bundle_ref.v1.schema.json",
+  "title": "EvidenceBundleRef",
+  "description": "Kanıt paketi referansı — KR-072 kanonik. Bir dataset'in tüm kanıt zincirini (attestation, scan, verification, QC, calibration) tek bir referansta toplar.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "bundle_id",
+    "dataset_id",
+    "attestations",
+    "created_at"
+  ],
+  "properties": {
+    "bundle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "dataset_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "attestations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "description": "Attestation ID listesi (kronolojik sıra)."
+    },
+    "scan_reports": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "description": "AV tarama rapor ID'leri."
+    },
+    "verification_reports": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "description": "Hash doğrulama rapor ID'leri."
+    },
+    "qc_reports": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "description": "QC rapor ID'leri."
+    },
+    "calibration_certificates": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "description": "Kalibrasyon sertifika ID'leri."
+    },
+    "complete": {
+      "type": "boolean",
+      "description": "Tüm zorunlu kanıtlar mevcut mu?"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "x-kr-ref": [
+    "KR-072"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

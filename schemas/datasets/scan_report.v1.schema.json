@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/datasets/scan_report.v1.schema.json",
+  "title": "ScanReport",
+  "description": "AV tarama raporu — KR-073 kanonik. AV1 (edge) veya AV2 (platform) tarama sonucunu belgelendirir.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "report_id",
+    "dataset_id",
+    "scan_stage",
+    "engine_id",
+    "signatures_version",
+    "started_at",
+    "ended_at",
+    "scanned_files",
+    "result"
+  ],
+  "properties": {
+    "report_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "dataset_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "scan_stage": {
+      "$ref": "../../enums/scan_stage.enum.v1.json"
+    },
+    "engine_id": {
+      "type": "string",
+      "description": "AV motor kimliği (ClamAV, ESET vb.)."
+    },
+    "signatures_version": {
+      "type": "string",
+      "description": "AV imza veritabanı versiyonu."
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ended_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "scanned_files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "size_bytes",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "integer"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "result": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "FAIL"
+      ],
+      "description": "PASS = CLEAN, FAIL = tehdit bulundu."
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "threat_name": {
+            "type": "string"
+          },
+          "threat_type": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "quarantined": {
+      "type": "boolean",
+      "description": "FAIL durumunda true — dosyalar karantinaya alındı."
+    }
+  },
+  "x-hard-gate": "PASS olmadan dataset durum ilerleyemez.",
+  "x-kr-ref": [
+    "KR-073"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

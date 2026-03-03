@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/edge/dataset_manifest.v1.schema.json",
+  "title": "EdgeDatasetManifest",
+  "description": "Edge tarafı dataset manifest — KR-072 kanonik. Kiosk'un oluşturduğu ham veri envanteri. Platform tarafındaki dataset_manifest ile senkronize olmalıdır.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "manifest_id",
+    "dataset_id",
+    "kiosk_id",
+    "drone_type",
+    "drone_serial",
+    "files",
+    "created_at"
+  ],
+  "properties": {
+    "manifest_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "dataset_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "kiosk_id": {
+      "type": "string"
+    },
+    "drone_type": {
+      "$ref": "../../enums/drone_type.enum.v1.json"
+    },
+    "drone_serial": {
+      "type": "string"
+    },
+    "mission_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "filename",
+          "size_bytes",
+          "sha256_hash",
+          "mime_type"
+        ],
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sha256_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "mime_type": {
+            "type": "string",
+            "enum": [
+              "image/tiff",
+              "image/jpeg",
+              "image/x-raw",
+              "image/x-dng"
+            ]
+          },
+          "captured_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "gps_lat": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "gps_lon": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "total_hash": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "signature": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Kiosk GPG/RSA imzası."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "x-kr-ref": [
+    "KR-072",
+    "KR-073"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/datasets/dataset_manifest.v1.schema.json",
+  "title": "DatasetManifest",
+  "description": "Dataset dosya manifest'i — KR-072 kanonik. Dataset içindeki tüm dosyaların hash, boyut ve metadata bilgilerini içerir. Hash sealing ve doğrulama için kullanılır.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "manifest_id",
+    "dataset_id",
+    "files",
+    "total_hash",
+    "created_at"
+  ],
+  "properties": {
+    "manifest_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "dataset_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "filename",
+          "size_bytes",
+          "sha256_hash",
+          "mime_type"
+        ],
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sha256_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "mime_type": {
+            "type": "string",
+            "enum": [
+              "image/tiff",
+              "image/jpeg",
+              "image/x-raw",
+              "image/x-dng"
+            ]
+          },
+          "captured_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "gps_lat": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "gps_lon": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "total_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Tüm dosya hash'lerinin birleşik SHA-256 özeti."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "x-kr-ref": [
+    "KR-072"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}
