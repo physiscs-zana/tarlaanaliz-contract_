@@ -1,11 +1,24 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tarlaanaliz.com/enums/payment_method.v1.json",
+  "$id": "tarlaanaliz/enums/payment_method.v1.json",
   "title": "PaymentMethod",
+  "description": "Ödeme yöntemi enum'u — KR-033 kanonik. SSOT Uyum: 1.2.0 (2026-02-24).\nDEĞİŞİKLİK NOTU: IBAN_TRANSFER açıklaması güncellendi — dekont e-posta ile değil uygulama içi yükleme (POST /payments/intents/{id}/upload-receipt) ile gönderilir.",
   "type": "string",
-  "description": "Ödeme yöntemi: kredi kartı (gateway) veya IBAN havale/EFT (dekont + manuel onay).",
   "enum": [
     "CREDIT_CARD",
     "IBAN_TRANSFER"
-  ]
+  ],
+  "x-enum-descriptions": {
+    "CREDIT_CARD": "Online ödeme sağlayıcısı üzerinden hosted checkout / payment session. Başarılı işlem provider webhook'u ile otomatik olarak PAID durumuna geçer.",
+    "IBAN_TRANSFER": "Çiftçi belirtilen IBAN'a havale yapar. Transfer açıklamasına Tarla ID'sini yazar. Dekontu POST /payments/intents/{id}/upload-receipt endpoint'i üzerinden UYGULAMA İÇİ yükler (e-posta KANAL DEĞİLDİR). CENTRAL_ADMIN dekontu inceler ve mark-paid veya reject yapar."
+  },
+  "x-iban-transfer-flow": {
+    "step1": "Kullanıcı IBAN talimat ekranını görür: IBAN (kopyala), alıcı adı, tutar, Tarla ID (kopyala)",
+    "step2": "Çiftçi havale açıklamasına Tarla ID yazar",
+    "step3": "Çiftçi dekontu POST /payments/intents/{id}/upload-receipt ile yükler",
+    "step4": "CENTRAL_ADMIN admin panelinde bekleyen intent'i görür, dekontu inceler",
+    "step5": "Admin POST /admin/payments/intents/{id}/mark-paid (admin_note zorunlu) veya reject",
+    "pii_note": "Platform DB'de kullanıcı e-postası tutulmaz. receipt_blob_id opak referans olarak saklanır (PII vault sorumluluğu)."
+  },
+  "x-kr-ref": "KR-033"
 }

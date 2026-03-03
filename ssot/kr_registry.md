@@ -1,5 +1,13 @@
 # TarlaAnaliz SSOT — KR Registry (Kanonik)
 
+> **Versiyon notu (2026-02-24 — sync with SSOT v1.2.0):**  
+> - KR-015 başlığı drone-agnostik olarak güncellendi  
+> - KR-021, 027, 028, 033: "yıllık abonelik" → "Sezonluk Paket" terminolojisi düzeltildi  
+> - KR-030, KR-061: drone politikası drone-agnostik listeye güncellendi  
+> - KR-033 normatif özeti: `PAID` durum makinesi, otomatik expire kaldırma, IBAN in-app dekont bilgisi eklendi  
+> - KR-040 applies-to: platform-only → contracts, edge-kiosk, platform, worker  
+> _Önceki versiyon: kr_registry_OPTIMAL_2026-02-14_v7.md_
+
 
 ## KR Domain Paketleri İndeksi (Navigasyon)
 
@@ -61,32 +69,32 @@
 | [KR-012](#kr-012) | İş Planlaması | platform | SSOT, KANONIK |  |
 | [KR-013](#kr-013) | Çiftçi Üyeliği ve Tarla Yönetimi | platform, worker | SSOT, KANONIK | *Üyelik:** PWA veya web üzerinden üye olunur. İl, ilçe, ad, soyad ve telefon numarası alınır; üye olunca kendi sayfasına yönlendirilir. |
 | [KR-014](#kr-014) | Kooperatif/Üretici Birliği Üyeliği ve İşleyiş | platform, worker | SSOT, KANONIK | *Doğrulama:** Hesap 'Onay Bekliyor' açılır. Evrak kontrolü sonrası Merkez yönetim 'Aktif' yapar; eksik evrak varsa aktif edilemez. |
-| [KR-015](#kr-015) | Drone Pilotları (DJI Mavic 3M ile Uçuş) | edge-kiosk, platform, worker | SSOT, KANONIK | *Üyelik/Kayıt:** İl, ilçe, ad soyad, telefon; drone modeli ve seri numarası; hizmet verdiği mahalle/köy listesi (başlangıçta opsiyonel). Drone seri numarası doğrulama referansıdır. |
+| [KR-015](#kr-015) | Drone Pilotları (Desteklenen Drone/Sensör Kombinasyonları ile Uçuş) | edge-kiosk, platform, worker | SSOT, KANONIK | **Üyelik/Kayıt:** İl, ilçe, ad soyad, telefon; drone modeli ve seri numarası; hizmet verdiği mahalle/köy listesi (başlangıçta opsiyonel). Drone seri numarası doğrulama referansıdır. Desteklenen modeller drone_registry.yaml'a kayıtlı olmalıdır. |
 | [KR-016](#kr-016) | Drone - Tarla - Bitki Eşleştirme Politikası (Routing) | worker | SSOT, KANONIK | *Amaç:** Veri setini doğru FieldID ve o tarihte geçerli bitki türü ile eşleştirip doğru bitki-özel YZ modelini otomatik seçmek. |
 | [KR-017](#kr-017) | YZ Modeli ile Analiz | contracts, edge-kiosk, platform, worker | SSOT, KANONIK | *Veri Akışı:** "FieldID + bitki türü + MissionID; PII yok" bu bilgiler sadece uçuş yapacak drone pilotuna ve hafıza kartlarına işlenir. |
 | [KR-018](#kr-018) | Tam Radyometrik Kalibrasyon Zorunluluğu (Radiometric Calibration: ışık/sensör etkilerini düzeltme) | contracts, edge-kiosk, platform, worker | SSOT, KANONIK, DEV | Model eğitimi (training: modelin öğrenmesi) ve saha sonuçları arasında tutarlılık (training-serving parity: eğitim/çalıştırma aynı dağılım). |
 | [KR-019](#kr-019) | Expert Portal (Uzman İnceleme) | platform, worker | SSOT, KANONIK, DEV | Uzman portalı, modelin düşük güven verdiği veya çelişkili durumlarda manuel inceleme için kullanılır (**PII görünmez**) |
 | [KR-020](#kr-020) | Ücretlendirme | platform | SSOT, KANONIK |  |
-| [KR-021](#kr-021) | Genel Prensip | platform, worker | SSOT, KANONIK | Ücretler bitki türü ve analiz seçeneğine göre: tek seferlik analiz veya yıllık abonelik |
+| [KR-021](#kr-021) | Genel Prensip | platform, worker | SSOT, KANONIK | Ücretler bitki türü ve analiz seçeneğine göre: tek seferlik analiz veya **Sezonluk Paket** |
 | [KR-022](#kr-022) | Fiyat Yönetimi Politikası | platform | SSOT, KANONIK | Fiyatlar uygulamada serbest **yazılmaz**; tek kaynak **PriceBook** (Fiyat Kataloğu) |
 | [KR-023](#kr-023) | Örnek Fiyat Kurgusu (Pamuk) | platform, worker | SSOT, KANONIK | \| Seçenek \| Liste Fiyat \| İlk Yıl / Abonelik Kurgusu \| |
 | [KR-024](#kr-024) | Önerilen Tarama Periyodu (Gün) | platform | SSOT, KANONIK | \| Bitki \| Önerilen Periyot (gün) \| |
 | [KR-025](#kr-025) | Analiz İçeriği (Hizmet Kapsamı) | worker | SSOT, KANONIK | *Temel İlke:** Sistem ilaçlama kararı **vermez**; yalnızca tespit, risk skoru ve erken uyarı sağlar. |
 | [KR-026](#kr-026) | Sunum Biçimi | platform | SSOT, KANONIK | Harita katmanları (ısı haritası / grid / zonlama) |
-| [KR-027](#kr-027) | Abonelik Planlayıcı (Subscription Scheduler) | platform, worker | SSOT, DEV | *Amaç:** Yıllık abonelik seçen kullanıcılar için otomatik, periyodik Mission üretimi. |
-| [KR-028](#kr-028) | Mission Yaşam Döngüsü ve SLA Alanları | platform, worker | SSOT, DEV | *Mission Tanımı:** Bir tarlanın belirli bir tarihte yapılacak tek analiz görevi. Tek seferlik talepten veya yıllık abonelikten oluşabilir. |
+| [KR-027](#kr-027) | Abonelik Planlayıcı (Subscription Scheduler) | platform, worker | SSOT, DEV | **Amaç:** **Sezonluk Paket** seçen kullanıcılar için otomatik, periyodik Mission üretimi. |
+| [KR-028](#kr-028) | Mission Yaşam Döngüsü ve SLA Alanları | platform, worker | SSOT, DEV | **Mission Tanımı:** Bir tarlanın belirli bir tarihte yapılacak tek analiz görevi. Tek seferlik talepten veya **Sezonluk Paket**'ten oluşabilir. |
 | [KR-029](#kr-029) | YZ Eğitim Geri Bildirimi (Training Feedback Loop) | contracts, platform, worker | SSOT, DEV | *Amaç:** Uzman düzeltmelerini YZ modeline geri beslemek ve model iyileştirmesi yapmak. |
-| [KR-030](#kr-030) | Notlar, Sınırlar ve Uyum | edge-kiosk, worker | SSOT, KANONIK, DEV | **Drone standardı:** Başlangıçta DJI Mavic 3M dışında veri kabul edilmez (sonraki fazda değerlendirilir) |
+| [KR-030](#kr-030) | Notlar, Sınırlar ve Uyum | edge-kiosk, worker | SSOT, KANONIK, DEV | **Drone standardı:** Drone-agnostik mimari. Desteklenen modeller drone_registry.yaml'a kayıtlı olmalıdır (DJI Mavic 3M birincil/önerilen; M350 RTK+Sentera 6X, WingtraOne Gen II+MicaSense RedEdge-P, Parrot Anafi USA+Sequoia+, AgEagle eBee X+Altum-PT). Bkz. KR-034 (DJI bağımsızlık planı). |
 | [KR-031](#kr-031) | Pilot Hakediş ve Ödeme Politikası | platform | SSOT, KANONIK | Pilotlar, bir ay içinde **ONAYLANMIŞ** görevlerde taradıkları alan üzerinden hakediş kazanır |
 | [KR-032](#kr-032) | Training Export Standardı | contracts, platform, worker | SSOT, KANONIK, DEV | *Amaç:** Uzman feedback'lerini standart formatta export ederek model eğitim pipeline'ına aktarmak. |
-| [KR-033](#kr-033) | Ödeme ve Manuel Onay (Müşteri Tahsilat Akışı) | platform, worker | SSOT, KANONIK | *Amaç:** Çiftçi / Kooperatif / Üretici Birliği tarafından açılan **tek seferlik Mission** veya **yıllık Subscription** taleplerinde tahsilatı standartlaştırmak ve talebin “işlenebilir” hale gelmesini … |
-| [KR-040](#kr-040) | Güvenlik Kabul Kriterleri/Test Checklist (SDLC Entegrasyonu) | platform | SSOT, KANONIK | *Amaç:** TXT repo mantalitesindeki savunma-derinliği (defense-in-depth) güvenlik yaklaşımını, ölçülebilir kabul kriterlerine ve SDLC kapılarına (PR/CI/Release/Ops) bağlamak. |
+| [KR-033](#kr-033) | Ödeme ve Manuel Onay (Müşteri Tahsilat Akışı) | platform, worker | SSOT, KANONIK | **Amaç:** Tek seferlik Mission veya **Sezonluk Paket Subscription** taleplerinde tahsilat standartlaştırma. Durum: `PAYMENT_PENDING`→`PAID`/`REJECTED`/`CANCELLED`; `PAID`→`REFUNDED`. Otomatik expire yoktur. IBAN dekont uygulama içi yüklenir. |
+| [KR-040](#kr-040) | Güvenlik Kabul Kriterleri/Test Checklist (SDLC Entegrasyonu) | contracts, edge-kiosk, platform, worker | SSOT, KANONIK | **Amaç:** TXT repo mantalitesindeki savunma-derinliği (defense-in-depth) güvenlik yaklaşımını, ölçülebilir kabul kriterlerine ve SDLC kapılarına (PR/CI/Release/Ops) bağlamak. PR/CI/Release/Ops kapıları tüm bileşenleri kapsar. |
 | [KR-041](#kr-041) | SDLC Kapıları (Gate) - Zorunlu Kontroller | contracts, edge-kiosk, platform, worker | SSOT, KANONIK | Contracts pinleme: CONTRACTS_VERSION (SemVer) + CONTRACTS_SHA256 zorunlu; değişiklikte breaking-change kontrolü |
 | [KR-042](#kr-042) | Kabul Kriterleri Matrisi | edge-kiosk, platform, worker | SSOT, KANONIK | \| Güvenlik Katmanı \| Kabul Kriteri (DoD) \| Test Kanıtı \| SDLC Gate \| |
 | [KR-043](#kr-043) | Test Checklist (Senaryo Bazlı) | contracts, edge-kiosk, platform, worker | SSOT, KANONIK | \| Senaryo \| Adımlar (özet) \| Beklenen Sonuç \| Kanıt/Artefakt \| |
 | [KR-050](#kr-050) | Kimlik Doğrulama ve Üyelik Akışı (Sade Model) | worker | SSOT, KANONIK | Kimlik bilgisi olarak yalnızca **Telefon Numarası** kullanılır (E-posta ve TCKN **toplanmaz**) |
 | [KR-060](#kr-060) | Ürün/Teknik Spesifikasyondan Normatif | platform | SSOT, KANONIK |  |
-| [KR-061](#kr-061) | Amaç ve Sabit Çerçeve | platform, worker | SSOT, KANONIK | Drone: DJI Mavic 3M |
+| [KR-061](#kr-061) | Amaç ve Sabit Çerçeve | platform, worker | SSOT, KANONIK | Drone-agnostik mimari. DJI Mavic 3M birincil/önerilen; desteklenen diğer modeller drone_registry.yaml'a kayıtlıdır. Bkz. KR-001 (radyometri notu) ve KR-034 (DJI bağımsızlık planı). |
 | [KR-062](#kr-062) | Tasarım İlkeleri | edge-kiosk, platform, worker | SSOT, KANONIK | 1. **Tek kaynak gerçek:** API ve veri modeli. Web (PWA) iş kuralı kopyalamaz. |
 | [KR-063](#kr-063) | Roller ve Yetkiler (RBAC) | edge-kiosk, platform, worker | SSOT, KANONIK | \| Rol Kodu \| Kısa Tanım \| Özet Yetki \| |
 | [KR-064](#kr-064) | Harita Katman Standardı (Layer Registry) | platform | SSOT, KANONIK, DEV | Katmanlar web (PWA) arayüzünde aynı Layer Registry üzerinden tanımlanır. Renk + desen/ikon + opaklık + öncelik tutarlı olmalıdır. |
@@ -227,11 +235,11 @@
 ---
 ### KR-015
 
-**Başlık:** Drone Pilotları (DJI Mavic 3M ile Uçuş)  
+**Başlık:** Drone Pilotları (Desteklenen Drone/Sensör Kombinasyonları ile Uçuş)  
 **Applies to:** edge-kiosk, platform, worker  
 **Kaynaklar:** SSOT, KANONIK
 
-**Normatif özet:** *Üyelik/Kayıt:** İl, ilçe, ad soyad, telefon; drone modeli ve seri numarası; hizmet verdiği mahalle/köy listesi (başlangıçta opsiyonel). Drone seri numarası doğrulama referansıdır.
+**Normatif özet:** **Üyelik/Kayıt:** İl, ilçe, ad soyad, telefon; drone modeli ve seri numarası; hizmet verdiği mahalle/köy listesi (başlangıçta opsiyonel). Drone seri numarası doğrulama referansıdır. Desteklenen drone/sensör kombinasyonları drone_registry.yaml'a kayıtlı olmalıdır (DJI Mavic 3M birincil/önerilen; DJI M350 RTK+Sentera 6X, WingtraOne Gen II+MicaSense RedEdge-P, Parrot Anafi USA+Sequoia+, AgEagle eBee X+Altum-PT desteklenir). Bkz. KR-034 (DJI risk planı).
 
 **Component dokümanları:**
 - Contracts: bkz. `contracts_ssot.md` (bu KR contracts kapsamındaysa)
@@ -330,7 +338,7 @@
 **Applies to:** platform, worker  
 **Kaynaklar:** SSOT, KANONIK
 
-**Normatif özet:** Ücretler bitki türü ve analiz seçeneğine göre: tek seferlik analiz veya yıllık abonelik
+**Normatif özet:** Ücretler bitki türü ve analiz seçeneğine göre: tek seferlik analiz veya **Sezonluk Paket**
 
 **Component dokümanları:**
 - Contracts: bkz. `contracts_ssot.md` (bu KR contracts kapsamındaysa)
@@ -420,7 +428,7 @@
 **Applies to:** platform, worker  
 **Kaynaklar:** SSOT, DEV
 
-**Normatif özet:** *Amaç:** Yıllık abonelik seçen kullanıcılar için otomatik, periyodik Mission üretimi.
+**Normatif özet:** **Amaç:** **Sezonluk Paket** seçen kullanıcılar için otomatik, periyodik Mission üretimi.
 
 **Component dokümanları:**
 - Contracts: bkz. `contracts_ssot.md` (bu KR contracts kapsamındaysa)
@@ -435,7 +443,7 @@
 **Applies to:** platform, worker  
 **Kaynaklar:** SSOT, DEV
 
-**Normatif özet:** *Mission Tanımı:** Bir tarlanın belirli bir tarihte yapılacak tek analiz görevi. Tek seferlik talepten veya yıllık abonelikten oluşabilir.
+**Normatif özet:** **Mission Tanımı:** Bir tarlanın belirli bir tarihte yapılacak tek analiz görevi. Tek seferlik talepten veya **Sezonluk Paket**'ten oluşabilir.
 
 **Component dokümanları:**
 - Contracts: bkz. `contracts_ssot.md` (bu KR contracts kapsamındaysa)
@@ -465,7 +473,7 @@
 **Applies to:** edge-kiosk, worker  
 **Kaynaklar:** SSOT, KANONIK, DEV
 
-**Normatif özet:** **Drone standardı:** Başlangıçta DJI Mavic 3M dışında veri kabul edilmez (sonraki fazda değerlendirilir)
+**Normatif özet:** **Drone standardı:** Drone-agnostik mimari. Desteklenen modeller drone_registry.yaml'a kayıtlı olmalıdır (DJI Mavic 3M birincil/önerilen; M350 RTK+Sentera 6X, WingtraOne Gen II+MicaSense RedEdge-P, Parrot Anafi USA+Sequoia+, AgEagle eBee X+Altum-PT). Bkz. KR-034 (DJI risk planı). KVKK: PII ile operasyon verisi ayrıdır. Model çıktısı karar değildir.
 
 **Component dokümanları:**
 - Contracts: bkz. `contracts_ssot.md` (bu KR contracts kapsamındaysa)
@@ -510,7 +518,7 @@
 **Applies to:** platform, worker  
 **Kaynaklar:** SSOT, KANONIK
 
-**Normatif özet:** *Amaç:** Çiftçi / Kooperatif / Üretici Birliği tarafından açılan **tek seferlik Mission** veya **yıllık Subscription** taleplerinde tahsilatı standartlaştırmak ve talebin “işlenebilir” hale gelmesini …
+**Normatif özet:** **Amaç:** Tek seferlik Mission veya **Sezonluk Paket Subscription** taleplerinde tahsilat standartlaştırma. Durum: `PAYMENT_PENDING`→`PAID`/`REJECTED`/`CANCELLED`; `PAID`→`REFUNDED`. Otomatik expire yoktur. IBAN dekont uygulama içi yüklenir; e-posta kanal değildir. Tüm geçişler `PaymentStateMachine` üzerinden — bypass yasaktır.
 
 **Component dokümanları:**
 - Contracts: bkz. `contracts_ssot.md` (bu KR contracts kapsamındaysa)
@@ -522,10 +530,10 @@
 ### KR-040
 
 **Başlık:** Güvenlik Kabul Kriterleri/Test Checklist (SDLC Entegrasyonu)  
-**Applies to:** platform  
+**Applies to:** contracts, edge-kiosk, platform, worker  
 **Kaynaklar:** SSOT, KANONIK
 
-**Normatif özet:** *Amaç:** TXT repo mantalitesindeki savunma-derinliği (defense-in-depth) güvenlik yaklaşımını, ölçülebilir kabul kriterlerine ve SDLC kapılarına (PR/CI/Release/Ops) bağlamak.
+**Normatif özet:** **Amaç:** Savunma-derinliği (defense-in-depth) güvenlik yaklaşımını, ölçülebilir kabul kriterlerine ve SDLC kapılarına (PR/CI/Release/Ops) bağlamak. PR/CI/Release/Ops kapıları tüm bileşenleri (contracts, edge-kiosk, platform, worker) kapsar; yalnızca platform değildir.
 
 **Component dokümanları:**
 - Contracts: bkz. `contracts_ssot.md` (bu KR contracts kapsamındaysa)
@@ -615,7 +623,7 @@
 **Applies to:** platform, worker  
 **Kaynaklar:** SSOT, KANONIK
 
-**Normatif özet:** Drone: DJI Mavic 3M
+**Normatif özet:** Drone-agnostik mimari. DJI Mavic 3M birincil/önerilen; desteklenen diğer modeller drone_registry.yaml'a kayıtlıdır. Bkz. KR-001 (radyometri notu) ve KR-034 (DJI bağımsızlık planı).
 
 **Component dokümanları:**
 - Contracts: bkz. `contracts_ssot.md` (bu KR contracts kapsamındaysa)
