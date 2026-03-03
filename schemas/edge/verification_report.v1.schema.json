@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/edge/verification_report.v1.schema.json",
+  "title": "EdgeVerificationReport",
+  "description": "Edge tarafı hash doğrulama raporu — KR-073 kanonik. Kiosk'ta dosya hash'lerinin manifest ile eşleştirilmesi.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "report_id",
+    "dataset_id",
+    "kiosk_id",
+    "manifest_hash",
+    "decision",
+    "verified_at"
+  ],
+  "properties": {
+    "report_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "dataset_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "kiosk_id": {
+      "type": "string"
+    },
+    "manifest_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "file_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "filename",
+          "match"
+        ],
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "expected_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "computed_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "match": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "mismatches": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Eşleşmeyen dosya adları."
+    },
+    "decision": {
+      "$ref": "../../enums/verification_status.enum.v1.json"
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "x-kr-ref": [
+    "KR-073"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

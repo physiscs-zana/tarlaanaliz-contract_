@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/events/dataset_calibrated.v1.schema.json",
+  "title": "DatasetCalibrated",
+  "description": "Dataset radyometrik kalibrasyonu tamamlandı — KR-018.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "dataset_id",
+    "status_from",
+    "status_to",
+    "occurred_at",
+    "correlation_id"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Olay benzersiz kimliği."
+    },
+    "event_type": {
+      "type": "string",
+      "const": "DATASET.CALIBRATED",
+      "description": "Olay tipi sabiti."
+    },
+    "dataset_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "mission_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "status_from": {
+      "const": "RAW_HASH_SEALED"
+    },
+    "status_to": {
+      "const": "CALIBRATED"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "correlation_id": {
+      "type": "string",
+      "description": "İzlenebilirlik için korelasyon ID. PII içermez."
+    },
+    "actor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Olayı tetikleyen servis veya kullanıcı ID."
+    },
+    "payload": {
+      "type": "object",
+      "properties": {
+        "calibration_method": {
+          "type": "string"
+        },
+        "calibration_certificate_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "bands_calibrated": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "x-kr-ref": [
+    "KR-018",
+    "KR-072"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

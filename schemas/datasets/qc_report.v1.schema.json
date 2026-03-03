@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/datasets/qc_report.v1.schema.json",
+  "title": "QcReport",
+  "description": "Kalite kontrol raporu — KR-018 + KR-072 kanonik. Kalibrasyon sonrası veri kalitesini değerlendirir.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "report_id",
+    "dataset_id",
+    "qc_status",
+    "metrics",
+    "created_at"
+  ],
+  "properties": {
+    "report_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "dataset_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "calibration_result_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri-reference"
+    },
+    "qc_status": {
+      "$ref": "../../enums/qc_status.enum.v1.json"
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "spatial_resolution_cm": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Yer çözünürlüğü (cm/piksel)."
+        },
+        "radiometric_accuracy_pct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Radyometrik doğruluk yüzdesi."
+        },
+        "coverage_pct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Tarla kaplama yüzdesi."
+        },
+        "overlap_pct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Görüntü örtüşme yüzdesi."
+        },
+        "cloud_cover_pct": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Bulut örtüsü yüzdesi."
+        },
+        "blur_score": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Bulanıklık skoru (0=net, 1=bulanık)."
+        }
+      },
+      "description": "Kalite metrikleri. Eşik değerleri KR-018'de tanımlıdır."
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "WARN durumunda uyarı mesajları."
+    },
+    "failure_reasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "FAIL durumunda başarısızlık sebepleri."
+    },
+    "inspector_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Manuel QC yapan uzmanın ID'si (opsiyonel)."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "x-hard-gate": "FAIL → REJECTED_QUARANTINE.",
+  "x-kr-ref": [
+    "KR-018",
+    "KR-072"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

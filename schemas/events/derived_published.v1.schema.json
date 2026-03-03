@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/events/derived_published.v1.schema.json",
+  "title": "DerivedPublished",
+  "description": "Türetilmiş ürünler yayınlandı — KR-072. NDVI haritaları, hastalık tespiti raporları vb. çiftçiye sunuldu.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "dataset_id",
+    "status_from",
+    "status_to",
+    "occurred_at",
+    "correlation_id"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Olay benzersiz kimliği."
+    },
+    "event_type": {
+      "type": "string",
+      "const": "DERIVED.PUBLISHED",
+      "description": "Olay tipi sabiti."
+    },
+    "dataset_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "mission_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "status_from": {
+      "const": "ANALYZED"
+    },
+    "status_to": {
+      "const": "DERIVED_PUBLISHED"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "correlation_id": {
+      "type": "string",
+      "description": "İzlenebilirlik için korelasyon ID. PII içermez."
+    },
+    "actor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Olayı tetikleyen servis veya kullanıcı ID."
+    },
+    "payload": {
+      "type": "object",
+      "properties": {
+        "product_types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Yayınlanan ürün tipleri (NDVI_MAP, DISEASE_REPORT, YIELD_ESTIMATE vb.)."
+        },
+        "delivery_method": {
+          "type": "string",
+          "enum": [
+            "PLATFORM_UI",
+            "EMAIL_NOTIFICATION",
+            "API_WEBHOOK"
+          ]
+        }
+      }
+    }
+  },
+  "x-kr-ref": [
+    "KR-072"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

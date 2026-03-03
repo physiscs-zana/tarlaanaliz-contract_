@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/datasets/calibration_certificate.v1.schema.json",
+  "title": "CalibrationCertificate",
+  "description": "Kalibrasyon sertifikası — KR-018 kanonik. Radyometrik kalibrasyonun başarıyla tamamlandığının kanıtı. Training-serving parity zorunluluğu.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "certificate_id",
+    "dataset_id",
+    "calibration_method",
+    "panel_reflectance_values",
+    "irradiance_source",
+    "calibrated_at",
+    "valid"
+  ],
+  "properties": {
+    "certificate_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "dataset_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "calibration_method": {
+      "type": "string",
+      "enum": [
+        "REFLECTANCE_PANEL",
+        "DLS_IRRADIANCE",
+        "EMPIRICAL_LINE"
+      ],
+      "description": "Kullanılan kalibrasyon yöntemi."
+    },
+    "panel_reflectance_values": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "red": {
+          "type": "number"
+        },
+        "green": {
+          "type": "number"
+        },
+        "blue": {
+          "type": "number"
+        },
+        "nir": {
+          "type": "number"
+        },
+        "red_edge": {
+          "type": "number"
+        }
+      },
+      "description": "Reflektans panel değerleri (band bazlı). REFLECTANCE_PANEL yöntemi için zorunlu."
+    },
+    "irradiance_source": {
+      "type": "string",
+      "enum": [
+        "DLS_SENSOR",
+        "PANEL_PRE_POST",
+        "EXTERNAL_STATION"
+      ],
+      "description": "Irradiance ölçüm kaynağı."
+    },
+    "bands_calibrated": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Kalibre edilen bantlar (örn: ['RED', 'GREEN', 'NIR', 'RED_EDGE'])."
+    },
+    "calibrated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "valid": {
+      "type": "boolean",
+      "description": "Kalibrasyon geçerli mi? false ise dataset ilerleyemez."
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "x-kr-ref": [
+    "KR-018"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

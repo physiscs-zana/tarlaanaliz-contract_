@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/datasets/transfer_batch.v1.schema.json",
+  "title": "TransferBatch",
+  "description": "Veri transfer partisi — KR-072 + KR-071 kanonik. Edge kiosk'tan platforma aktarılan dataset grubunu temsil eder.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "batch_id",
+    "kiosk_id",
+    "datasets",
+    "transfer_started_at",
+    "status"
+  ],
+  "properties": {
+    "batch_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "kiosk_id": {
+      "type": "string",
+      "description": "Gönderen edge kiosk ID."
+    },
+    "datasets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "dataset_id",
+          "manifest_hash"
+        ],
+        "properties": {
+          "dataset_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "manifest_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "file_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "total_size_bytes": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "transfer_started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "transfer_completed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "IN_PROGRESS",
+        "COMPLETED",
+        "FAILED",
+        "PARTIAL"
+      ]
+    },
+    "protocol": {
+      "type": "string",
+      "enum": [
+        "SFTP",
+        "HTTPS_UPLOAD",
+        "PHYSICAL_MEDIA"
+      ],
+      "description": "Transfer protokolü."
+    },
+    "encryption": {
+      "type": "string",
+      "enum": [
+        "AES_256_GCM",
+        "TLS_1_3",
+        "NONE"
+      ],
+      "description": "Transfer şifreleme yöntemi."
+    }
+  },
+  "x-kr-ref": [
+    "KR-071",
+    "KR-072"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

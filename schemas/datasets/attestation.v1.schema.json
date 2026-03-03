@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/datasets/attestation.v1.schema.json",
+  "title": "Attestation",
+  "description": "Kanıt zinciri onay belgesi — KR-072 kanonik. Dataset'in belirli bir durumdan geçtiğinin kriptografik kanıtı.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "attestation_id",
+    "dataset_id",
+    "status_from",
+    "status_to",
+    "evidence_refs",
+    "attested_by",
+    "attested_at"
+  ],
+  "properties": {
+    "attestation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "dataset_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "status_from": {
+      "$ref": "../../enums/dataset_status.enum.v1.json"
+    },
+    "status_to": {
+      "$ref": "../../enums/dataset_status.enum.v1.json"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/EvidenceRef"
+      },
+      "description": "Bu geçişi destekleyen kanıt referansları."
+    },
+    "attested_by": {
+      "type": "string",
+      "description": "Onaylayan servis/kullanıcı ID."
+    },
+    "attested_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "signature": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Onay dijital imzası."
+    }
+  },
+  "$defs": {
+    "EvidenceRef": {
+      "type": "object",
+      "required": [
+        "evidence_type",
+        "ref_id"
+      ],
+      "properties": {
+        "evidence_type": {
+          "type": "string",
+          "enum": [
+            "SCAN_REPORT",
+            "VERIFICATION_REPORT",
+            "QC_REPORT",
+            "CALIBRATION_CERTIFICATE",
+            "MANIFEST"
+          ]
+        },
+        "ref_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "ref_uri": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri-reference"
+        }
+      }
+    }
+  },
+  "x-kr-ref": [
+    "KR-072"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

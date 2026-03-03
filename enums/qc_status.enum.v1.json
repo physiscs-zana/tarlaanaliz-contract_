@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/enums/qc_status.enum.v1.json",
+  "title": "QcStatus",
+  "description": "Kalite kontrol (QC) sonuç durumu — KR-018 + KR-072 kanonik. SSOT Uyum: 1.2.0.",
+  "type": "string",
+  "enum": [
+    "PASS",
+    "WARN",
+    "FAIL"
+  ],
+  "x-enum-descriptions": {
+    "PASS": "Tüm kalite kontrol kriterleri karşılandı. Dataset bir sonraki aşamaya geçebilir.",
+    "WARN": "Bazı metrikler eşik değerinin altında ama kritik değil. Manuel inceleme önerilir. Dataset ilerleyebilir ancak uyarı kaydedilir.",
+    "FAIL": "Kritik kalite problemi tespit edildi. Dataset REJECTED_QUARANTINE'e geçer. Yeniden kalibrasyon veya veri toplama gerekir."
+  },
+  "x-kr-ref": ["KR-018", "KR-072"],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

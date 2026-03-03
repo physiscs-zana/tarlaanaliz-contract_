@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/events/dataset_ingested.v1.schema.json",
+  "title": "DatasetIngested",
+  "description": "Dataset edge kiosk'a alındı — KR-072. Drone'dan ham veri ilk kez sisteme girdi.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "dataset_id",
+    "status_to",
+    "occurred_at",
+    "correlation_id"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Olay benzersiz kimliği."
+    },
+    "event_type": {
+      "type": "string",
+      "const": "DATASET.INGESTED",
+      "description": "Olay tipi sabiti."
+    },
+    "dataset_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "mission_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "status_from": {
+      "type": "null",
+      "description": "İlk giriş — önceki durum yok."
+    },
+    "status_to": {
+      "const": "RAW_INGESTED"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "correlation_id": {
+      "type": "string",
+      "description": "İzlenebilirlik için korelasyon ID. PII içermez."
+    },
+    "actor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Olayı tetikleyen servis veya kullanıcı ID."
+    },
+    "payload": {
+      "type": "object",
+      "properties": {
+        "kiosk_id": {
+          "type": "string"
+        },
+        "drone_type": {
+          "type": "string"
+        },
+        "drone_serial": {
+          "type": "string"
+        },
+        "file_count": {
+          "type": "integer"
+        },
+        "total_size_bytes": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "x-kr-ref": [
+    "KR-072"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

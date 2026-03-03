@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/events/dataset_verified.v1.schema.json",
+  "title": "DatasetVerified",
+  "description": "Dataset hash/imza doğrulaması tamamlandı — KR-073.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "dataset_id",
+    "status_from",
+    "status_to",
+    "occurred_at",
+    "correlation_id"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Olay benzersiz kimliği."
+    },
+    "event_type": {
+      "type": "string",
+      "const": "DATASET.VERIFIED",
+      "description": "Olay tipi sabiti."
+    },
+    "dataset_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "mission_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "status_from": {
+      "$ref": "../../enums/dataset_status.enum.v1.json"
+    },
+    "status_to": {
+      "$ref": "../../enums/dataset_status.enum.v1.json"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "correlation_id": {
+      "type": "string",
+      "description": "İzlenebilirlik için korelasyon ID. PII içermez."
+    },
+    "actor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Olayı tetikleyen servis veya kullanıcı ID."
+    },
+    "payload": {
+      "type": "object",
+      "properties": {
+        "decision": {
+          "$ref": "../../enums/verification_status.enum.v1.json"
+        },
+        "verification_report_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "mismatches_count": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "x-kr-ref": [
+    "KR-073"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

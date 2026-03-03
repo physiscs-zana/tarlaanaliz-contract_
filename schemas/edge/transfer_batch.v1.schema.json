@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/edge/transfer_batch.v1.schema.json",
+  "title": "EdgeTransferBatch",
+  "description": "Edge tarafı transfer partisi — KR-071 + KR-072 kanonik. Kiosk'tan platforma gönderilen veri paketi.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "batch_id",
+    "kiosk_id",
+    "dataset_ids",
+    "initiated_at",
+    "status"
+  ],
+  "properties": {
+    "batch_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "kiosk_id": {
+      "type": "string"
+    },
+    "dataset_ids": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    },
+    "initiated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "PENDING",
+        "IN_PROGRESS",
+        "COMPLETED",
+        "FAILED"
+      ]
+    },
+    "transfer_protocol": {
+      "type": "string",
+      "enum": [
+        "SFTP",
+        "HTTPS_UPLOAD",
+        "PHYSICAL_MEDIA"
+      ]
+    },
+    "total_size_bytes": {
+      "type": "integer"
+    },
+    "checksum": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Batch-level SHA-256 checksum."
+    },
+    "error_message": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "x-kr-ref": [
+    "KR-071",
+    "KR-072"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

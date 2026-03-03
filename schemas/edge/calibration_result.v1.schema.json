@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/edge/calibration_result.v1.schema.json",
+  "title": "CalibrationResult",
+  "description": "Edge tarafı kalibrasyon sonucu — KR-018 kanonik. Kiosk'ta yapılan ön kalibrasyon işleminin sonucunu belgelendirir.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "result_id",
+    "dataset_id",
+    "kiosk_id",
+    "calibration_method",
+    "status",
+    "processed_at"
+  ],
+  "properties": {
+    "result_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "dataset_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "kiosk_id": {
+      "type": "string"
+    },
+    "calibration_method": {
+      "type": "string",
+      "enum": [
+        "REFLECTANCE_PANEL",
+        "DLS_IRRADIANCE",
+        "EMPIRICAL_LINE"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "SUCCESS",
+        "PARTIAL",
+        "FAILED"
+      ]
+    },
+    "bands_processed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "panel_detected": {
+      "type": "boolean",
+      "description": "Reflektans paneli otomatik tespit edildi mi?"
+    },
+    "irradiance_readings": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "object",
+        "properties": {
+          "band": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "error_message": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "processed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "x-kr-ref": [
+    "KR-018"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

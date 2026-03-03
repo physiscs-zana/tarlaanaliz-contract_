@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/edge/qc_report.v1.schema.json",
+  "title": "EdgeQcReport",
+  "description": "Edge tarafı ön kalite kontrol raporu — KR-018 kanonik. Kiosk'ta yapılan hızlı QC kontrolü.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "report_id",
+    "dataset_id",
+    "kiosk_id",
+    "checks",
+    "overall_status",
+    "created_at"
+  ],
+  "properties": {
+    "report_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "dataset_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "kiosk_id": {
+      "type": "string"
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "check_name",
+          "status"
+        ],
+        "properties": {
+          "check_name": {
+            "type": "string",
+            "enum": [
+              "FILE_COUNT",
+              "FILE_FORMAT",
+              "GPS_PRESENCE",
+              "IMAGE_SHARPNESS",
+              "COVERAGE_ESTIMATE",
+              "OVERLAP_ESTIMATE"
+            ]
+          },
+          "status": {
+            "$ref": "../../enums/qc_status.enum.v1.json"
+          },
+          "value": {
+            "type": [
+              "number",
+              "string",
+              "null"
+            ]
+          },
+          "threshold": {
+            "type": [
+              "number",
+              "string",
+              "null"
+            ]
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "overall_status": {
+      "$ref": "../../enums/qc_status.enum.v1.json"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "x-kr-ref": [
+    "KR-018",
+    "KR-072"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}

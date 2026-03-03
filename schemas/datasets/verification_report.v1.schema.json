@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/schemas/datasets/verification_report.v1.schema.json",
+  "title": "VerificationReport",
+  "description": "Hash/imza doğrulama raporu — KR-073 kanonik. Manifest hash ve dosya hash'lerinin eşleşip eşleşmediğini belgelendirir.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "report_id",
+    "dataset_id",
+    "manifest_hash",
+    "computed_hashes",
+    "decision",
+    "verified_at"
+  ],
+  "properties": {
+    "report_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "dataset_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "manifest_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Manifest'te kayıtlı beklenen hash."
+    },
+    "computed_hashes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "filename",
+          "expected_hash",
+          "computed_hash",
+          "match"
+        ],
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "expected_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "computed_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "match": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "mismatches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "expected_hash": {
+            "type": "string"
+          },
+          "computed_hash": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Uyuşmayan dosyaların listesi. Boş ise tüm hash'ler eşleşiyor."
+    },
+    "signature_valid": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "GPG/RSA imza doğrulama sonucu."
+    },
+    "decision": {
+      "$ref": "../../enums/verification_status.enum.v1.json",
+      "description": "ACCEPT veya REJECT."
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "REJECT durumunda red sebebi."
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "x-hard-gate": "REJECT → REJECTED_QUARANTINE.",
+  "x-kr-ref": [
+    "KR-073"
+  ],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-03-03"
+}
