@@ -1,14 +1,30 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tarlaanaliz.com/enums/payment_status.v1.json",
-  "title": "PaymentStatusV1",
+  "$id": "tarlaanaliz/enums/payment_status.v1.json",
+  "title": "PaymentStatus",
+  "description": "Ödeme durumu enum'u — KR-033 kanonik. SSOT Uyum: 1.2.0 (2026-02-24).\nDEĞİŞİKLİK NOTU: APPROVED kaldırıldı (kanonik durum PAID'dir). EXPIRED kaldırıldı (otomatik expire yok; admin kararıyla CANCELLED yapılır).",
   "type": "string",
-  "description": "Ödeme durumları v1.",
   "enum": [
     "PAYMENT_PENDING",
     "PAID",
     "REJECTED",
-    "EXPIRED",
     "CANCELLED"
-  ]
+  ],
+  "x-enum-descriptions": {
+    "PAYMENT_PENDING": "Ödeme bekleniyor. Intent açıldı, tahsilat doğrulanmadı.",
+    "PAID": "Ödeme tamamlandı. Provider webhook (CREDIT_CARD) veya CENTRAL_ADMIN manuel onayı (IBAN_TRANSFER) ile geçilir. KANONIK onay durumu — APPROVED kullanılmaz.",
+    "REJECTED": "Ödeme reddedildi. rejection_reason zorunludur (dekont uyuşmazlığı, eksik bilgi vb.).",
+    "CANCELLED": "Ödeme intent'i iptal edildi. Yalnızca PAYMENT_PENDING iken kullanıcı veya CENTRAL_ADMIN tarafından yapılır. Otomatik expire yoktur."
+  },
+  "x-state-machine": {
+    "transitions": [
+      { "from": "PAYMENT_PENDING", "to": "PAID",      "trigger": "webhook (CREDIT_CARD) veya admin mark-paid (IBAN_TRANSFER)" },
+      { "from": "PAYMENT_PENDING", "to": "REJECTED",  "trigger": "admin reject (rejection_reason zorunlu)" },
+      { "from": "PAYMENT_PENDING", "to": "CANCELLED", "trigger": "kullanıcı veya admin iptal" }
+    ],
+    "notes": "PaymentStateMachine servisi bypass edilemez. Otomatik expire yoktur."
+  },
+  "x-breaking-change": "v1→: APPROVED ve EXPIRED değerleri kaldırıldı (SSOT 1.2.0 / 2026-02-24). APPROVED kullanan kodlar PAID'e migrasyon gerektirir.",
+  "x-kr-ref": "KR-033",
+  "x-migration-guide": "docs/migration_guides/payment_intent_v1_to_v2.md"
 }

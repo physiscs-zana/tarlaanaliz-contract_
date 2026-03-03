@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tarlaanaliz/enums/drone_type.enum.v1.json",
+  "title": "DroneType",
+  "description": "Desteklenen drone/sensör kombinasyon kodları — KR-034 drone-agnostik mimari. SSOT Uyum: 1.2.0 (2026-02-24).\nBu enum drone_registry.yaml ile CI'da senkronize edilir. Yeni model eklemek için drone_registry.yaml güncellenmeli ve bu enum'a eklenmeli.",
+  "type": "string",
+  "enum": [
+    "DJI_MAVIC_3M",
+    "DJI_M350_RTK_SENTERA_6X",
+    "WINGTRAONE_GEN2_MICASENSE_REDEDGE_P",
+    "PARROT_ANAFI_USA_SEQUOIA_PLUS",
+    "AGEAGLE_EBEE_X_ALTUM_PT"
+  ],
+  "x-enum-descriptions": {
+    "DJI_MAVIC_3M": "Birincil/önerilen platform. Entegre multispektral sensör (4 bant + RGB). Kompakt, hızlı deploy. Küçük-orta tarla ölçeğinde en verimli seçenek.",
+    "DJI_M350_RTK_SENTERA_6X": "Ağır yük platformu + 6 bantlı multispektral sensör. Büyük tarla, yüksek çözünürlük gerektiren senaryolar. RTK hassas konum.",
+    "WINGTRAONE_GEN2_MICASENSE_REDEDGE_P": "VTOL fixed-wing + 5 bantlı multispektral. Geniş alan tarama (500+ ha/uçuş). Sabit kanat verimliliği + dikey iniş-kalkış kolaylığı.",
+    "PARROT_ANAFI_USA_SEQUOIA_PLUS": "Alternatif multirotor + 4 bantlı multispektral + termal. DJI tedarik riski senaryosunda birincil yedek.",
+    "AGEAGLE_EBEE_X_ALTUM_PT": "Alternatif fixed-wing + 6 bantlı multispektral + termal. Geniş alan tarama alternatifi. Uzun menzil (90+ dk uçuş süresi)."
+  },
+  "x-platform-categories": {
+    "multirotor": ["DJI_MAVIC_3M", "DJI_M350_RTK_SENTERA_6X", "PARROT_ANAFI_USA_SEQUOIA_PLUS"],
+    "fixed_wing_vtol": ["WINGTRAONE_GEN2_MICASENSE_REDEDGE_P", "AGEAGLE_EBEE_X_ALTUM_PT"]
+  },
+  "x-primary-model": "DJI_MAVIC_3M",
+  "x-registry-sync": {
+    "source": "drone_registry.yaml",
+    "ci_check": "tools/validate.py — drone_type enum değerleri drone_registry.yaml ile eşleşmeli",
+    "add_model_flow": "1) drone_registry.yaml'a ekle → 2) bu enum'a ekle → 3) intake_manifest + mission schema test → 4) CI geçmeli"
+  },
+  "x-kr-ref": ["KR-034", "KR-015", "KR-030"],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-02-24"
+}

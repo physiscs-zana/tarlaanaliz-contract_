@@ -1,292 +1,158 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tarlaanaliz.com/schemas/platform/payment_intent.v2.schema.json",
-  "title": "PaymentIntentV2",
+  "$id": "tarlaanaliz/schemas/platform/payment_intent.v2.schema.json",
+  "title": "PaymentIntent",
+  "description": "PaymentIntent v2 — KR-033 kanonik ödeme sözleşmesi. SSOT Uyum: 1.2.0 (2026-02-24).\nDeğişiklikler v1'e göre: receipt_blob_id zorunlu alan; admin_note + rejection_reason eklendi; status enum PAID kanonik (APPROVED/EXPIRED kaldırıldı); field_id eklendi (IBAN eşleştirme); otomatik expire kaldırıldı.\nBkz. enums/payment_status.v2.json + enums/payment_method.v1.json",
   "type": "object",
   "unevaluatedProperties": false,
-  "description": "PaymentIntent v2: v1 + CANCELLED/REFUNDED alanları ve amount_kurus standardı.",
+  "required": [
+    "intent_id",
+    "payer_user_id",
+    "target_type",
+    "target_id",
+    "amount_kurus",
+    "currency",
+    "method",
+    "status",
+    "price_snapshot_id",
+    "created_at"
+  ],
   "properties": {
-    "payment_intent_id": {
+    "intent_id": {
       "type": "string",
-      "format": "uuid"
-    },
-    "target_type": {
-      "$ref": "../../enums/payment_target_type.v1.json"
-    },
-    "target_id": {
-      "type": "string",
-      "format": "uuid"
+      "format": "uuid",
+      "description": "PaymentIntent benzersiz kimliği (UUID v4). Bir kez oluşturulur, değişmez."
     },
     "payer_user_id": {
       "type": "string",
-      "format": "uuid",
-      "description": "Ödeyen kullanıcı (PII değil; dahili user id)."
+      "description": "Ödemeyi yapan kullanıcının user_id değeri (pseudonymous — PII değil)."
+    },
+    "target_type": {
+      "type": "string",
+      "enum": ["MISSION", "SUBSCRIPTION"],
+      "description": "Ödeme hedefi tipi. MISSION = tek seferlik analiz; SUBSCRIPTION = Sezonluk Paket."
+    },
+    "target_id": {
+      "type": "string",
+      "description": "Hedefin ID değeri: mission_id veya subscription_id."
     },
     "field_id": {
-      "type": "string",
-      "format": "uuid",
-      "description": "Opsiyonel: mission hedeflerinde raporlama kolaylığı."
-    },
-    "payment_method": {
-      "$ref": "../../enums/payment_method.v1.json"
-    },
-    "status": {
-      "$ref": "../../enums/payment_status.v2.json"
-    },
-    "currency": {
-      "type": "string",
-      "default": "TRY",
-      "minLength": 3,
-      "maxLength": 3
-    },
-    "reference_code": {
-      "type": "string",
-      "minLength": 6,
-      "maxLength": 64,
-      "description": "IBAN transfer için referans (örn: ANALIZ-{id})."
-    },
-    "bank_details": {
-      "type": "object",
-      "unevaluatedProperties": false,
-      "description": "IBAN talimat ekranında gösterilecek şirket hesap bilgileri.",
-      "properties": {
-        "iban": {
-          "type": "string",
-          "minLength": 10,
-          "maxLength": 64
-        },
-        "account_holder": {
-          "type": "string",
-          "minLength": 2,
-          "maxLength": 120
-        },
-        "instructions": {
-          "type": "string",
-          "minLength": 0,
-          "maxLength": 500
-        }
-      },
-      "required": [
-        "iban",
-        "account_holder"
-      ]
-    },
-    "gateway_provider": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 50,
-      "description": "IYZICO, PAYTR vb."
-    },
-    "gateway_transaction_id": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 200
-    },
-    "gateway_payment_status": {
-      "type": "string",
-      "minLength": 0,
-      "maxLength": 50
-    },
-    "receipt_blob_id": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 200,
-      "description": "Dekont dosyası için opak storage referansı (DB’de e-posta tutulmaz)."
-    },
-    "receipt_received_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "reviewed_by": {
-      "type": "string",
-      "format": "uuid",
-      "description": "Manuel inceleme yapan admin user id."
-    },
-    "reviewed_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "rejection_reason": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 500
-    },
-    "created_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "updated_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "paid_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "expires_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "IBAN transfer için son ödeme/dec. gönderim süresi (örn 7 gün)."
-    },
-    "metadata": {
-      "type": "object",
-      "additionalProperties": true,
-      "description": "IP, user-agent vb. PII sızdırmamak şartıyla."
+      "type": ["string", "null"],
+      "description": "İlgili tarla ID'si. IBAN_TRANSFER eşleştirme için opsiyonel — admin panelinde otomatik listeler. KR-033 §5 Admin Eşleştirme Akışı."
     },
     "amount_kurus": {
       "type": "integer",
-      "minimum": 0,
-      "description": "Toplam tutar kuruş cinsinden (TRY için)."
+      "minimum": 1,
+      "description": "Tutar — kuruş cinsinden (örn: 2500 = 25,00 TL). Negatif değer yasak."
     },
-    "amount_total_display": {
-      "type": "number",
-      "minimum": 0,
-      "description": "Opsiyonel: UI/rapor için decimal tutar."
+    "currency": {
+      "type": "string",
+      "const": "TRY",
+      "description": "Para birimi. Şu an yalnızca TRY desteklenmektedir."
+    },
+    "method": {
+      "$ref": "../../enums/payment_method.v1.json",
+      "description": "Ödeme yöntemi: CREDIT_CARD veya IBAN_TRANSFER."
+    },
+    "status": {
+      "$ref": "../../enums/payment_status.v2.json",
+      "description": "Ödeme durumu. Tüm geçişler PaymentStateMachine üzerinden yapılır — bypass yasaktır."
+    },
+    "price_snapshot_id": {
+      "type": "string",
+      "description": "Sipariş anında alınan fiyat anlık görüntüsü (immutable). pricing.v1.schema.json referansı."
+    },
+    "receipt_blob_id": {
+      "type": ["string", "null"],
+      "description": "IBAN_TRANSFER: kullanıcı tarafından POST /payments/intents/{id}/upload-receipt ile yüklenen dekont referansı. Platform DB'de yalnızca opak blob ID saklanır (PII vault sorumluluğu). E-posta ile gönderim desteklenmez."
+    },
+    "payment_provider_ref": {
+      "type": ["string", "null"],
+      "description": "CREDIT_CARD: ödeme sağlayıcısının işlem/session referans ID'si."
+    },
+    "rejection_reason": {
+      "type": ["string", "null"],
+      "description": "REJECTED durumunda CENTRAL_ADMIN tarafından girilmesi zorunlu red gerekçesi. Kullanıcıya SMS+bildirim ile iletilir."
+    },
+    "admin_note": {
+      "type": ["string", "null"],
+      "description": "PAID/REJECTED/REFUNDED aksiyonlarında CENTRAL_ADMIN tarafından girilmesi zorunlu yönetici notu. Audit log'a yazılır."
+    },
+    "admin_user_id": {
+      "type": ["string", "null"],
+      "description": "Manuel aksiyon yapan CENTRAL_ADMIN user_id. PAYMENT.MARK_PAID ve PAYMENT.REJECTED audit olaylarında zorunludur."
+    },
+    "paid_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "PAID durumuna geçiş zamanı (ISO 8601)."
+    },
+    "rejected_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "REJECTED durumuna geçiş zamanı (ISO 8601)."
     },
     "cancelled_at": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "cancel_reason": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 500
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "CANCELLED durumuna geçiş zamanı (ISO 8601)."
     },
     "refunded_at": {
-      "type": "string",
-      "format": "date-time"
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "REFUNDED durumuna geçiş zamanı (ISO 8601)."
     },
-    "refund_amount_kurus": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "refund_reason": {
+    "created_at": {
       "type": "string",
-      "minLength": 1,
-      "maxLength": 500
+      "format": "date-time",
+      "description": "Intent oluşturulma zamanı (ISO 8601)."
+    },
+    "updated_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Son güncelleme zamanı (ISO 8601)."
+    },
+    "correlation_id": {
+      "type": ["string", "null"],
+      "description": "Audit log correlation ID — WORM log standardına göre zorunlu."
     }
   },
-  "required": [
-    "payment_intent_id",
-    "target_type",
-    "target_id",
-    "payer_user_id",
-    "payment_method",
-    "status",
-    "currency",
-    "created_at",
-    "updated_at",
-    "amount_kurus"
+  "$defs": {},
+  "x-business-rules": {
+    "no_auto_expire": "Otomatik expire yoktur. PAYMENT_PENDING intent'ler yalnızca admin kararıyla CANCELLED yapılır.",
+    "paid_immutable": "PAID olan intent tekrar PAID yapılamaz. CANCELLED/REJECTED intent PAID yapılamaz.",
+    "state_machine": "Tüm durum geçişleri PaymentStateMachine servisi üzerinden yapılır. Bypass PaymentTransitionError döner ve audit log'a yazılır.",
+    "admin_required_fields": "mark-paid: admin_note zorunlu. reject: rejection_reason zorunlu. Tüm admin aksiyonlarında admin_user_id zorunlu.",
+    "receipt_channel": "IBAN_TRANSFER dekontu yalnızca POST /payments/intents/{id}/upload-receipt ile yüklenir. E-posta kanal değildir.",
+    "mission_gate": "PAID olmadan Mission ASSIGNED olamaz.",
+    "subscription_gate": "PAID olmadan Subscription ACTIVE olamaz; PENDING_PAYMENT iken scheduler çalışmaz."
+  },
+  "x-audit-events": [
+    "PAYMENT.INTENT_CREATED",
+    "PAYMENT.MARK_PAID",
+    "PAYMENT.WEBHOOK_PAID",
+    "PAYMENT.REJECTED",
+    "PAYMENT.CANCELLED",
+    "PAYMENT.REFUNDED"
   ],
-  "allOf": [
-    {
-      "if": {
-        "properties": {
-          "payment_method": {
-            "const": "IBAN_TRANSFER"
-          }
-        },
-        "required": [
-          "payment_method"
-        ]
-      },
-      "then": {
-        "required": [
-          "reference_code",
-          "expires_at",
-          "bank_details"
-        ]
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "payment_method": {
-            "const": "CREDIT_CARD"
-          }
-        },
-        "required": [
-          "payment_method"
-        ]
-      },
-      "then": {
-        "required": [
-          "gateway_provider"
-        ]
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "status": {
-            "const": "PAID"
-          }
-        },
-        "required": [
-          "status"
-        ]
-      },
-      "then": {
-        "required": [
-          "paid_at"
-        ]
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "status": {
-            "const": "REJECTED"
-          }
-        },
-        "required": [
-          "status"
-        ]
-      },
-      "then": {
-        "required": [
-          "reviewed_by",
-          "reviewed_at",
-          "rejection_reason"
-        ]
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "status": {
-            "const": "CANCELLED"
-          }
-        },
-        "required": [
-          "status"
-        ]
-      },
-      "then": {
-        "required": [
-          "cancelled_at",
-          "cancel_reason"
-        ]
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "status": {
-            "const": "REFUNDED"
-          }
-        },
-        "required": [
-          "status"
-        ]
-      },
-      "then": {
-        "required": [
-          "refunded_at",
-          "refund_amount_kurus",
-          "refund_reason"
-        ]
-      }
-    }
-  ]
+  "x-api-endpoints": {
+    "farmer": [
+      "POST /payments/intents",
+      "GET /payments/intents/{id}",
+      "GET /payments/intents/{id}/instructions",
+      "POST /payments/intents/{id}/upload-receipt",
+      "POST /payments/intents/{id}/cancel"
+    ],
+    "provider_callback": ["POST /payments/webhook/{provider}"],
+    "admin": [
+      "GET /admin/payments/intents?status=PAYMENT_PENDING",
+      "GET /admin/payments/intents?field_id={id}",
+      "POST /admin/payments/intents/{id}/mark-paid",
+      "POST /admin/payments/intents/{id}/reject",
+      "POST /admin/payments/intents/{id}/refund"
+    ]
+  },
+  "x-kr-ref": "KR-033",
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-02-24"
 }
