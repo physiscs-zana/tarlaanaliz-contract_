@@ -24,6 +24,10 @@ tags:
     description: Analysis job management
   - name: Events
     description: Domain event publishing
+  - name: AdminPayments
+    description: Admin payment management (KR-033)
+  - name: AdminTraining
+    description: Admin training data export (KR-032)
 
 paths:
   /intake/manifests:
@@ -88,6 +92,183 @@ paths:
       responses:
         '202':
           description: Event accepted
+
+  # ==================== Admin Payments (KR-033) ====================
+
+  /admin/payments/intents:
+    get:
+      tags: [AdminPayments]
+      summary: List payment intents (admin)
+      description: |
+        List payment intents with optional filters.
+        Per KR-033: CENTRAL_ADMIN and BILLING_ADMIN access.
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PAYMENT_PENDING, PAID, REJECTED, CANCELLED, REFUNDED]
+          description: Filter by payment status
+        - name: field_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by field ID (IBAN matching)
+      responses:
+        '200':
+          description: List of payment intents
+
+  /admin/payments/intents/{intent_id}/mark-paid:
+    parameters:
+      - name: intent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [AdminPayments]
+      summary: Mark payment as paid (admin)
+      description: |
+        Admin marks IBAN_TRANSFER payment as paid after receipt verification.
+        Per KR-033: admin_note and admin_user_id are required.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [admin_note, admin_user_id]
+              properties:
+                admin_note:
+                  type: string
+                  description: Admin note (required for audit)
+                admin_user_id:
+                  type: string
+                  description: Admin user ID performing the action
+      responses:
+        '200':
+          description: Payment marked as paid
+        '400':
+          description: Invalid state transition (PaymentTransitionError)
+        '404':
+          description: Payment intent not found
+
+  /admin/payments/intents/{intent_id}/reject:
+    parameters:
+      - name: intent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [AdminPayments]
+      summary: Reject payment (admin)
+      description: |
+        Admin rejects payment with mandatory reason.
+        Per KR-033: rejection_reason and admin_user_id are required.
+        User notified via SMS + in-app notification.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rejection_reason, admin_user_id]
+              properties:
+                rejection_reason:
+                  type: string
+                  description: Rejection reason (required, sent to user)
+                admin_user_id:
+                  type: string
+                  description: Admin user ID performing the action
+      responses:
+        '200':
+          description: Payment rejected
+        '400':
+          description: Invalid state transition
+        '404':
+          description: Payment intent not found
+
+  /admin/payments/intents/{intent_id}/refund:
+    parameters:
+      - name: intent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [AdminPayments]
+      summary: Refund payment (admin)
+      description: |
+        Admin refunds a PAID payment.
+        Per KR-033: admin_note and admin_user_id are required.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [admin_note, admin_user_id]
+              properties:
+                admin_note:
+                  type: string
+                admin_user_id:
+                  type: string
+      responses:
+        '200':
+          description: Payment refunded
+        '400':
+          description: Invalid state transition
+        '404':
+          description: Payment intent not found
+
+  # ==================== Admin Training Export (KR-032) ====================
+
+  /admin/training/export:
+    post:
+      tags: [AdminTraining]
+      summary: Export training feedback data
+      description: |
+        Export expert feedback records for AI model training.
+        Per KR-032: Supports JSONL (classification) and GeoJSON (segmentation) formats.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [format]
+              properties:
+                format:
+                  type: string
+                  enum: [jsonl, geojson]
+                  description: Export format
+                from_date:
+                  type: string
+                  format: date-time
+                  description: Start date filter
+                to_date:
+                  type: string
+                  format: date-time
+                  description: End date filter
+                training_grade_min:
+                  type: string
+                  enum: [A, B, C, D]
+                  description: Minimum training grade filter
+      responses:
+        '200':
+          description: Export file
+          content:
+            application/jsonl:
+              schema:
+                type: string
+            application/geo+json:
+              schema:
+                type: object
 
 components:
   securitySchemes:

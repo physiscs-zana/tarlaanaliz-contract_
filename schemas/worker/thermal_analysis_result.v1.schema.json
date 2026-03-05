@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.tarlaanaliz.com/schemas/worker/thermal_analysis_result.v1.schema.json",
+  "title": "ThermalAnalysisResult",
+  "description": "Termal analiz sonucu — KR-084 kanonik. SSOT Uyum: 1.2.0 (2026-02-24).\nLWIR termal bant mevcut olduğunda Worker tarafından üretilen termal analiz çıktıları: canopy sıcaklık haritası, CWSI, canopy-soil sıcaklık deltası, sulama etkinliği göstergesi.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "thermal_result_id",
+    "analysis_job_id",
+    "dataset_id",
+    "field_id",
+    "canopy_temperature",
+    "cwsi",
+    "thermal_qc",
+    "created_at"
+  ],
+  "properties": {
+    "thermal_result_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Termal analiz sonucu benzersiz kimliği (UUID v4)."
+    },
+    "analysis_job_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "İlişkili analiz job kimliği."
+    },
+    "dataset_id": {
+      "type": "string",
+      "description": "İşlenen dataset kimliği."
+    },
+    "field_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "İlişkili tarla kimliği."
+    },
+    "mission_id": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "İlişkili görev kimliği."
+    },
+    "sensor_type": {
+      "type": "string",
+      "enum": ["FLIR_BOSON_320", "FLIR_BOSON_640"],
+      "description": "Termal sensör tipi. FLIR_BOSON_320=Altum-PT, FLIR_BOSON_640=Sentera 6X Thermal."
+    },
+    "canopy_temperature": {
+      "$ref": "#/$defs/ThermalLayer",
+      "description": "Bitki örtüsü yüzey sıcaklığı (°C) raster katmanı."
+    },
+    "cwsi": {
+      "$ref": "#/$defs/CWSILayer",
+      "description": "Crop Water Stress Index — 0.0 (stressiz) — 1.0 (tam stres) normalize indeks."
+    },
+    "canopy_soil_delta": {
+      "type": ["object", "null"],
+      "$ref": "#/$defs/ThermalLayer",
+      "description": "Bitki örtüsü ile toprak yüzeyi arasındaki sıcaklık farkı haritası (°C)."
+    },
+    "irrigation_efficiency": {
+      "type": ["object", "null"],
+      "description": "Sulama etkinliği göstergesi — CWSI + NDVI kombinasyonuyla üretilen türev katman.",
+      "properties": {
+        "layer_uri": {
+          "type": "string",
+          "description": "Sulama etkinliği katmanı URI (GeoTIFF)."
+        },
+        "mean_efficiency": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Ortalama sulama etkinliği (0.0–1.0)."
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "original_resolution": {
+      "type": "object",
+      "description": "Orijinal termal sensör çözünürlüğü.",
+      "properties": {
+        "width_px": {
+          "type": "integer",
+          "description": "Orijinal genişlik (piksel)."
+        },
+        "height_px": {
+          "type": "integer",
+          "description": "Orijinal yükseklik (piksel)."
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "upsampled_resolution": {
+      "type": ["object", "null"],
+      "description": "MS çözünürlüğüne yeniden örneklenen çözünürlük.",
+      "properties": {
+        "width_px": {
+          "type": "integer"
+        },
+        "height_px": {
+          "type": "integer"
+        },
+        "method": {
+          "type": "string",
+          "enum": ["BILINEAR", "BICUBIC", "NEAREST"],
+          "description": "Yeniden örnekleme yöntemi."
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "thermal_qc": {
+      "$ref": "#/$defs/ThermalQC",
+      "description": "Termal QC sonucu — sıcaklık aralığı makul mü, sensör drift var mı."
+    },
+    "layer_code": {
+      "type": "string",
+      "const": "THERMAL_STRESS",
+      "description": "Rapor katman kodu (KR-064)."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Sonuç oluşturulma zamanı (ISO 8601)."
+    }
+  },
+  "$defs": {
+    "ThermalLayer": {
+      "type": "object",
+      "required": ["layer_uri", "min_celsius", "max_celsius", "mean_celsius"],
+      "properties": {
+        "layer_uri": {
+          "type": "string",
+          "description": "Katman URI (GeoTIFF formatı, CRS bilgisi dahil)."
+        },
+        "min_celsius": {
+          "type": "number",
+          "description": "Minimum sıcaklık (°C)."
+        },
+        "max_celsius": {
+          "type": "number",
+          "description": "Maksimum sıcaklık (°C)."
+        },
+        "mean_celsius": {
+          "type": "number",
+          "description": "Ortalama sıcaklık (°C)."
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "CWSILayer": {
+      "type": "object",
+      "required": ["layer_uri", "min_cwsi", "max_cwsi", "mean_cwsi"],
+      "properties": {
+        "layer_uri": {
+          "type": "string",
+          "description": "CWSI katman URI (GeoTIFF formatı)."
+        },
+        "min_cwsi": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Minimum CWSI değeri."
+        },
+        "max_cwsi": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Maksimum CWSI değeri."
+        },
+        "mean_cwsi": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Ortalama CWSI değeri."
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "ThermalQC": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["PASS", "WARN", "FAIL"],
+          "description": "Termal QC durumu."
+        },
+        "temperature_range_valid": {
+          "type": "boolean",
+          "description": "Sıcaklık değerleri fiziksel olarak makul aralıkta mı (-20°C–70°C)."
+        },
+        "sensor_drift_detected": {
+          "type": "boolean",
+          "description": "Sensör drift tespit edildi mi."
+        },
+        "notes": {
+          "type": ["string", "null"],
+          "description": "QC notları."
+        }
+      },
+      "unevaluatedProperties": false
+    }
+  },
+  "x-audit-events": [
+    "THERMAL.PIPELINE_ACTIVATED",
+    "THERMAL.CALIBRATION_VERIFIED",
+    "THERMAL.QC_PASS",
+    "THERMAL.QC_WARN",
+    "THERMAL.QC_FAIL",
+    "THERMAL.RESULT_PUBLISHED"
+  ],
+  "x-kr-ref": ["KR-084", "KR-064"],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-02-24"
+}

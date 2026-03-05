@@ -108,6 +108,7 @@
 | [KR-081](#kr-081) | Kontrat Şemaları (Contract-First) — Kanonik JSON Schema | contracts, edge-kiosk, platform, worker | SSOT, KANONIK, DEV | *Amaç:** "olmalı" seviyesinden çıkıp, kodlamadan önce ortak dilin **makine-doğrulanabilir** (machine-verifiable) hale gelmesi. |
 | [KR-082](#kr-082) | RADIOMETRY / Radyometrik Kalibrasyon (Uyumluluk Etiketi) | contracts, edge-kiosk, platform, worker | SSOT, KANONIK, DEV | Bu madde, **[KR-018] Tam Radyometrik Kalibrasyon Zorunluluğu** ile **aynı zorunluluğu** “KR-082” etiketiyle de referanslayabilmek için eklenmiştir. |
 | [KR-083](#kr-083) | İl Operatörü | platform | SSOT, KANONIK, DEV | *Rol Kodu:** ProvinceOperator |
+| [KR-084](#kr-084) | Termal Veri İşleme ve Sulama Stresi Analizi (Thermal Pipeline) | contracts, worker, platform | SSOT, KANONIK | Termal bant (LWIR) mevcut olduğunda sulama stresi analizi; yoksa graceful degradation. Çıktılar: CWSI, canopy temp, delta haritası. THERMAL_STRESS LayerCode (KR-064). |
 
 ---
 
@@ -948,8 +949,8 @@ Hata/şüphe: `REJECTED_QUARANTINE`
 ---
 ### KR-083
 
-**Başlık:** İl Operatörü  
-**Applies to:** platform  
+**Başlık:** İl Operatörü
+**Applies to:** platform
 **Kaynaklar:** SSOT, KANONIK, DEV
 
 **Normatif özet:** *Rol Kodu:** ProvinceOperator
@@ -959,5 +960,47 @@ Hata/şüphe: `REJECTED_QUARANTINE`
 - Platform: bkz. `platform_ssot.md` (bu KR platform kapsamındaysa)
 - Edge-Kiosk: bkz. `edgekiosk_ssot.md` (bu KR edge-kiosk kapsamındaysa)
 - Worker: bkz. `worker_ssot.md` (bu KR worker kapsamındaysa)
+
+---
+### KR-084
+
+**Başlık:** Termal Veri İşleme ve Sulama Stresi Analizi (Thermal Pipeline)
+**Applies to:** contracts, worker, platform (rapor katmanı)
+**Kaynaklar:** SSOT, KANONIK
+
+**1) Amaç**
+- Termal bant (LWIR 8–14 μm) mevcut olduğunda sulama stresi, su yönetimi ve erken dönem bitki sağlığı sorunlarını görünür bantlardan önce tespit etmek; termal bant yoksa analiz akışını etkilememek (graceful degradation).
+
+**2) Zorunluluklar (MUST)**
+
+1) Termal pipeline yalnızca `intake_manifest.available_bands[]` içinde `LWIR` bant tanımı varsa etkinleşir. Termal bant yoksa bu KR'nin hiçbir kuralı uygulanmaz.
+2) Termal kalibrasyon gereksinimleri sensör tipine göre belirlenir:
+   - **Altum-PT (FLIR Boson 320×256):** Fabrika radyometrik kalibrasyon sertifikası + Pix4Dfields termal kalibrasyon pipeline'ı.
+   - **Sentera 6X Thermal (FLIR Boson 640):** Fabrika radyometrik kalibrasyon + ILS düzeltmesi.
+3) Termal kalibrasyon kanıtı `calibration_result.json` içinde `thermal_calibration` bölümünde tutulur.
+4) Worker termal analiz çıktıları: Canopy sıcaklık haritası (°C), CWSI (0.0–1.0), canopy-soil sıcaklık deltası, sulama etkinliği göstergesi.
+5) Termal katmanlar `THERMAL_STRESS` LayerCode ile raporda sunulur (bkz. KR-064).
+6) Termal verinin çözünürlüğü MS'den düşüktür; Worker termal katmanı MS çözünürlüğüne yeniden örnekler.
+
+**4) Kanıt / Artefact**
+- `calibration_result.json` → `thermal_calibration{}` bölümü
+- `thermal_analysis_result.json` (CWSI haritası + canopy temp + delta)
+- `qc_report.json` → `thermal_qc{}` (sıcaklık aralığı makul mü, sensör drift var mı)
+
+**5) Audit / Log**
+- `THERMAL.PIPELINE_ACTIVATED`, `THERMAL.CALIBRATION_VERIFIED`, `THERMAL.QC_PASS/WARN/FAIL`, `THERMAL.RESULT_PUBLISHED`
+
+**6) Hata Modları / Quarantine**
+- Termal kalibrasyon kanıtı eksik/geçersiz → `THERMAL.QC_FAIL` → termal pipeline devre dışı, MS pipeline normal devam
+- Sıcaklık değerleri fiziksel olarak anlamsız aralıkta (< -20°C veya > 70°C) → `THERMAL.QC_WARN` → admin inceleme
+
+**7) Test / Kabul Kriterleri**
+- Termal bant olmayan manifest ile job → termal pipeline etkinleşmez
+- Termal bant + kalibrasyon kanıtı eksik → `THERMAL.QC_FAIL` + termal katman üretilmez
+- Termal bant + kalibrasyon OK → CWSI haritası + canopy temp katmanı üretilir
+- CWSI değerleri 0.0–1.0 aralığında
+
+**8) Cross-refs**
+- KR-018/KR-082 (spektral kapasite), KR-017 (şemsiye), KR-072 (dataset lifecycle), KR-064 (layer registry)
 
 ---
