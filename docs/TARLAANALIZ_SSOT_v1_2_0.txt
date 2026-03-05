@@ -1,0 +1,1702 @@
+# TarlaAnaliz – Tek Kaynak Gerçek (SSOT) v1.2.0
+
+kurallar; daima buradaki kurallara kıdemli SDLC uzmanı, Technical Writer / SSOT Custodian, Domain Expert (AgriTech), Data Engineer / Pipeline Architect , Security Architect, QA Engineer / Test Architect, Kıdemli yazılım mimarı ve yazılım mühendisi olarak sadık kalmalısın;
+
+**KR Şablonu (Kanonik):**
+1) Amaç
+2) Kapsam / Applies-to
+3) Zorunluluklar (MUST) — test edilebilir maddeler
+4) Kanıt / Artefact (manifest, raporlar, sertifika, event)
+5) Audit / Log (olay adları + correlation_id)
+6) Hata Modları / Quarantine kararları
+7) Test / Kabul Kriterleri (E2E senaryolar)
+8) Cross-refs (ilgili KR’ler)
+**
+
+**KR Şablonu (Önerilen):
+
+## KR Domain Paketleri İndeksi (Navigasyon)
+**Not:** Bu bölüm sadece navigasyon içindir. Asıl normatif metin her KR başlığının altındadır.
+
+### A) Security & Isolation
+- KR-070 — Worker Isolation & Egress Policy
+- KR-071 — One-way Data Flow + Allowlist Yerleşimi (Ingress)
+- KR-073 — Untrusted File Handling + AV1/AV2 + Sandbox
+
+### B) Data Lifecycle & Evidence (Chain of Custody)
+- KR-072 — Dataset Lifecycle + Kanıt Zinciri (manifest/hash/signature/verification)
+- KR-018 — Radiometric Calibration Hard Gate (QC + Certificate)
+- KR-081 — Contract-First / Schema Gates (CI)
+
+### C) Orchestration & Operations
+- KR-017 — YZ Analiz Hattı (Şemsiye KR: 070–073 ayrıştırması)
+- KR-015 — Pilot kapasite/planlama alt kuralları
+
+### D) Payments & Governance
+- KR-033 — Ödeme + Manuel Onay + Audit
+
+### E) Risk & Business Continuity
+- KR-034 — Drone Tedarik Bağımsızlığı (DJI Aktif Operasyon Planı)
+- KR-084 — Termal Veri İşleme ve Sulama Stresi Analizi
+** Amaç → Kapsam → Zorunluluklar (MUST) → Kanıt/Audit → Hata Modları → Test/Kabul → Cross‑refs
+
+- [KR-017] Şemsiye kural: “AnalysisJob semantiği + PII yok + Edge’de model yok + Worker inbound yok + sonuçlar tek yönlü”
+- [KR-070] Worker izolasyonu + egress policy (inbound kapalı) — network policy matrix + egress allowlist + ops erişimi
+- [KR-071] Tek yönlü veri akışı + allowlist yerleşimi (Ingress’te) — mTLS ana kimlik, allowlist ikincil; akış Edge→Platform→Storage/Queue→Worker→Platform→Web
+- [KR-072] Dataset lifecycle + kanıt zinciri — manifest/hash/signature + AV1/AV2 + verification_report + state machine; tamper/mismatch ispatı
+- [KR-073] Untrusted file handling — ham dosya sandbox; iki aşamalı tarama; quarantine; güvenli türev üretim
+
+
+# BÖLÜM 1: KANONİK KURALLAR [KR-xxx]
+
+> ⚠️ **KRİTİK:** Bu bölümdeki kurallar değiştirilemez. Tüm uygulama/servisler bu kurallara uymalıdır.
+
+## [KR-000] Bu doküman seti nasıl okunur?
+
+- Saha adımları ve drone entegrasyon ayrıntıları ayrı bir SOP dokümanında tutulur
+- Geliştirici promptları, API ve test/acceptance şablonları ayrı bir geliştirici paketinde tutulur
+- Kimlik modeli: **bkz. [KR-050]** (normatif tek referans)
+- Doküman dilinde 'kapsama-izi' terimi kullanılır. Sistem/API tarafında aynı kavram teknik olarak 'footprint' (observed footprint) olarak geçebilir; ikisi eş anlamlıdır
+- Bu dokümanda kanonik (normatif) kurallar, bölüm başlıklarının başında [KR-xxx] etiketi ile tanımlanır
+- Sürümleme politikası: Bu SSOT **SemVer** ile sürümlenir (1.0.0 başlangıç). Değişiklikler için CHANGELOG tutulur; **breaking change → major**, geriye uyumlu ekleme → minor, yazım/düzeltme → patch.
+
+---
+
+## [KR-001] Proje Özeti
+
+**Amaç:** Çiftçilerin ürün kaybını erken uyarı ile azaltmak ve dönüm bazlı analiz hizmeti satmak. Başlangıç bölgesi GAP, ardından Türkiye geneline ölçekleme.
+
+**Sabit Çerçeve (Değişmez):**
+- Drone: Drone-agnostik mimari. Desteklenen modeller (drone_registry.yaml'a kayıtlı olma zorunluluğuyla):
+  - **DJI Mavic 3M** (birincil/önerilen multirotor — bkz. radyometri notu aşağıda)
+  - DJI Matrice 350 RTK + Sentera 6X
+  - WingtraOne Gen II + MicaSense RedEdge-P
+  - Parrot Anafi USA + Sequoia+
+  - AgEagle eBee X + Altum-PT
+  - Kalibrasyon yazılımı: **Pix4Dfields** (tüm markalar desteklenir)
+  > **⚠️ DJI Mavic 3M Radyometri Notu (KR-018 ile birlikte okuyun):** Pix4Dfields, M3M için "tam radyometrik kalibrasyon değil, göreli (relative) kalibrasyon" sağlar; mutlak reflectance yerine reflectance'a orantılı relatif değerler üretir. Mutlak radyometrik tutarlılık hedefleniyorsa (zaman serisi + training-serving parity) MicaSense RedEdge-P / Altum-PT veya Sentera 6X sınıfı sensörler tercih edilir. KR-018 hard-gate, manifest'teki kalibrasyon meta verisi üzerinden zorlanır — her iki yol da geçerli; fark kalibrasyon kalitesindedir.
+- Veri: RGB + multispektral — **Graceful Degradation (Bant Kapasitesine Göre Kademelenme) Modeli:**
+  - **Temel (4 bant — minimum):** Green, Red, Red Edge, NIR → NDVI, NDRE. DJI Mavic 3M bu sınıftadır.
+  - **Genişletilmiş (5 bant):** + Blue → EVI, SAVI, chlorophyll-a, Sentinel-2 uyumlu indeksler. MicaSense RedEdge-P, Sentera 6X, Altum-PT bu sınıftadır.
+  - **Termal (opsiyonel):** LWIR termal bant → sulama/su stresi sıcaklık delta analizi. Altum-PT ve Sentera 6X Thermal bu sınıftadır.
+  - Bant mevcudiyeti `intake_manifest.available_bands[]` alanından okunur; Worker pipeline ilgili analiz yollarını dinamik olarak etkinleştirir (bkz. KR-018/KR-082). Termal pipeline detayları: **[KR-084]**.
+  - **`drone_capability_matrix`**: Her drone_type enum değeri için desteklenen bantlar, indeks kapasiteleri ve kalibrasyon sınıfı `drone_capability_matrix.yaml` dosyasında tanımlıdır; intake_manifest validasyonu bu matris ile çapraz doğrulanır.
+- YZ sadece analiz yapar; ilaçlama/gübreleme kararı **VERMEZ**
+- Sonuçlar web (PWA) uygulamasında harita üzerinde renk + desen/ikon ile gösterilir
+
+---
+
+## [KR-002] Harita Katmanı Anlamları (Renk + Desen)
+
+| Katman | Renk | Desen |
+|--------|------|-------|
+| Sağlık (Health) | Yeşil | - |
+| Hastalık (Disease) | Turuncu | - |
+| Zararlı Böcek (Pest) | Kırmızı | - |
+| Mantar (Fungus) | Mor | - |
+| Yabancı Ot (Weed) | Sarı/Hardal | Noktalı desen |
+| Su Stresi | Mavi | Damla noktalı desen |
+| Azot Stresi | Soluk gri | Çapraz çizgili desen |
+| Termal Stres (KR-084) | Koyu Kırmızı/Turuncu gradient | Isı haritası + termometre ikon |
+
+> **Not:** Termal Stres katmanı yalnızca termal bant mevcut olduğunda (Altum-PT, Sentera 6X Thermal) üretilir. Termal bant yoksa bu katman raporda yer almaz; çiftçi Su Stresi katmanı ile bilgilendirilir. Bkz. **[KR-084]**.
+
+---
+
+## [KR-010] Web (PWA) - Genel
+
+## [KR-011] Kullanıcı Rolleri ve Temel Yaklaşım
+
+> **Not:** Detaylı rol kodları + yetki matrisi (RBAC) kanonik olarak **[KR-063]**'tedir. Bu bölüm sadece özet görünüm sağlar.
+
+| Rol | Sorumluluk |
+|-----|------------|
+| Çiftçi | Kendi tarlalarını kaydeder, bitki türlerini tanımlar, analiz talebi oluşturur, sonuçları görür |
+| Kooperatif/Üreticiler Birliği | Kurumsal hesapla üye olur; üye çiftçileri davet eder/aktarır; yetkisine göre tarlaları yönetir ve analiz talebi açabilir |
+| Drone Pilotu | Desteklenen drone/sensör kombinasyonlarından biriyle (drone_registry.yaml'a kayıtlı) uçuş yapar; görüntüleri her gün hafıza kartıyla yerel istasyona aktarır; **sonuç raporunu GÖRMEZ** |
+| İl Operatörü (temsilci) | **PII görmeden** ticari KPI + kapasite planlama metriklerini izler; sözleşmeye göre gelir payı alır |
+| Merkez Yönetim | KVKK/PII erişimi olan tek yetkili katman; kullanıcı/kooperatif doğrulama ve sistem politikalarını yönetir |
+| İstasyon Operatörü (STATION_OPERATOR) | M1/M2 fiziksel istasyon operasyonu: kart alım, AV+Pix4D pipeline yönetimi, M1→M2 devir teslim. **PII GÖRMEZ. Analiz sonuçlarına erişim YOK.** Hata durumlarında CENTRAL_ADMIN'e eskalasyon yapar. Detay: **[KR-063]** |
+| Ödeme Yöneticisi (BILLING_ADMIN) | IBAN dekont onayı, geri ödeme işlemleri, İl Operatör kar payı raporlama. Telefonu yalnızca makbuz eşleştirme için maskeli görür. Limit üstü işlemlerde CENTRAL_ADMIN'e eskalasyon zorunludur. Detay: **[KR-033]**, **[KR-083]** |
+
+---
+
+## [KR-012] İş Planlaması
+
+## [KR-013] Çiftçi Üyeliği ve Tarla Yönetimi
+
+**Üyelik:** PWA veya web üzerinden üye olunur. İl, ilçe, ad, soyad ve telefon numarası alınır; üye olunca kendi sayfasına yönlendirilir.
+
+**Tarla Kaydı:** Her tarla için il, ilçe, mahalle/köy, ada, parsel ve alan (m²) girilir. Sistem benzersiz FieldID üretir.
+
+**Tekil Kayıt Kuralı:**
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+**Bitki Türü Tanımı:** Her tarla için ekili bitki türü seçilir. Birden fazla bitki varsa her biri ayrı seçilir ve alan (m²) girilir.
+
+**Analiz Talebi:** Bitki türü bazında oluşturulur. Seçenekler: Sezonluk Paket veya tek seferlik analiz.
+
+**Bitki Türü Değiştirme Kuralı:**
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+---
+
+## [KR-014] Kooperatif/Üretici Birliği Üyeliği ve İşleyiş
+
+**Doğrulama:** Hesap 'Onay Bekliyor' açılır. Evrak kontrolü sonrası Merkez yönetim 'Aktif' yapar; eksik evrak varsa aktif edilemez.
+
+**Üye Çiftçi Dahil Etme:**
+- (a) Davet (QR / 6 haneli davet kodu)
+- (b) Toplu içe aktarım (Excel/CSV)
+- Çiftçi kooperatif bağlantısını kendi hesabından onaylar
+
+**Tarla ve Analiz:** Tarla benzersizliği aynıdır. Kooperatif yetkisine göre üyeleri adına analiz talebi açabilir. "Tarla kaydı tekil, sahiplik/erişim ayrı" yaklaşımı uygulanır.
+
+**Yetki Matrisi:**
+- COOP_OWNER
+- COOP_ADMIN
+- COOP_AGRONOMIST (aksiyon kararı vermez)
+- COOP_VIEWER
+
+---
+
+## [KR-015] Drone Pilotları (Desteklenen Drone/Sensör Kombinasyonları ile Uçuş)
+
+**Üyelik/Kayıt:** İl, ilçe, ad soyad, telefon; drone modeli ve seri numarası; hizmet verdiği mahalle/köy listesi (başlangıçta opsiyonel). Drone seri numarası doğrulama referansıdır.
+
+**Günlük Veri Teslimi:** Uçuş çıktısı her gün hafıza kartı ile yerel istasyona aktarılır. **Her uçuşta farklı hafıza kartı kullanılır.**
+
+> **Not:** Drone üreticisi tarafındaki kart kilidi/şifre/PIN gibi özellikler cihaz ve sürüme göre değişebilir; güvenlik garantisi olarak değil, **sadece ek katman** olarak değerlendirilir.
+
+**Her Aktarım Log Üretir:** pilot kimliği, drone seri no, tarih/saat, batch id, tarla eşleştirme durumu.
+
+**Eşleştirme Zorunlu:** Yüke gelen veri seti mutlaka kayıtlı bir tarla ile otomatik eşleşir; minimum: il, ilçe, mahalle/köy, ada, parsel, bitki türü (varsa FieldID). **Eşleştirme yoksa işlenmez.**
+
+[KR-015-1] Pilot Çalışma Günleri ve Günlük Kapasite Tanımı
+
+Amaç: Pilotların çalışacağı günleri seçebilmesi ve sistemin planlama motoruna net kapasite kısıtları sağlaması.
+
+[ZORUNLU] Pilot, haftalık çalışma günlerini work_days olarak seçer (Pzt–Paz kümesi).
+
+[ZORUNLU] |work_days| ≤ 6 (pilot en fazla 6 gün çalışabilir).
+
+[ZORUNLU] Pilot için daily_capacity_donum aralığı: 2500–3000 dönüm/gün.
+
+[ZORUNLU] Varsayılan kapasite (atanmamışsa): 2750 dönüm/gün.
+[ZORUNLU] Bitki türü bazlı kapasite profili (CropOpsProfile): admin, her CropType için daily_capacity_donum (varsayılan 2750; önerilen aralık 2500–3000) ve SYSTEM_SEED_QUOTA (varsayılan 1500) değerlerini tanımlar; planlama motoru Mission.crop_type profiline göre kota/kapasite uygular.
+
+[ZORUNLU] Kapasite aşım toleransı yalnızca “acil durum” için %10 olabilir; üst sınır: daily_capacity_donum × 1.10.
+
+[OPSİYONEL] Pilot, sezon yoğunluğuna göre kapasiteyi “gelecek hafta geçerli olacak şekilde” güncelleyebilir (anlık değişiklik yok; operasyon stabilitesi).
+
+[KR-015-2] Seed + Pull İş Dağıtım Politikası (Sistem Verir + Pilot/Çiftçi Seçimi)
+
+Amaç: İlk işlerin sistem tarafından garanti edilmesi; kalan kapasitenin ise çiftçinin pilot seçimi / pilotun müşteri bulmasıyla dolması.
+
+[ZORUNLU] Her pilot için günlük kapasite iki kotaya bölünür:
+
+SYSTEM_SEED_QUOTA: günlük kapasitenin “sistem tarafından verilen” kısmı
+
+PULL_QUOTA: kalan kapasite (çiftçi seçimi / pilot getirdiği iş)
+
+[ZORUNLU] SYSTEM_SEED_QUOTA varsayılan: 1500 dönüm/gün.
+
+[ZORUNLU] PULL_QUOTA varsayılan: daily_capacity_donum - 1500.
+
+[ZORUNLU] SYSTEM_SEED görevleri:
+
+sistem otomatik atar (yakınlık + bölge/territory + SLA + güvenilirlik)
+
+pilot bu kotayı reddedemez (sözleşme/operasyon gereği)
+
+[ZORUNLU] PULL görevleri:
+
+çiftçi “uygun pilot listesi”nden seçim yapabilir ve/veya pilot kendi getirdiği işi sisteme bağlayabilir
+
+kapasite uygunsa pilota “kabul/ret” hakkı tanınabilir (operasyonel esneklik)
+
+[ZORUNLU] Pilot, çiftçi PII görmeden çalışır; görevler MissionID + Field/ParcelRef + konum düzeyinde sunulur.
+
+[KR-015-3] Pilot İptal / Uygun Değilim Bildirimi ve Otomatik Yeniden Atama
+
+Amaç: Pilot görev yapamayacaksa zamanında bildirsin; sistem görevi başka pilota aktarsın.
+
+[ZORUNLU] Pilot, kendisine atanmış günlük/haftalık işi yapamayacaksa en az 12 saat önce bildirim yapmalıdır.
+
+[OPSİYONEL] Önerilen bildirim süresi: 24 saat.
+
+[ZORUNLU] Bildirim geldiğinde:
+
+görev “yeniden atama kuyruğu”na alınır
+
+sistem alternatif pilot atar
+
+eski/yeni pilota bildirim gönderilir (uygulama içi)
+
+[ZORUNLU] Bildirimsiz “no-show” durumları pilot güvenilirlik skorunu düşürür ve admin inceleme sürecini tetikleyebilir.
+
+[ZORUNLU] Tüm iptal ve yeniden atamalar audit log’a yazılır:
+
+actor (pilot/admin)
+
+timestamp
+
+reason
+
+eski/yeni pilot
+
+etkilenen mission(lar)
+
+**[KR-015-3A] Pilot Uçuş Otoritesi**
+
+**Amaç:** Pilot, sahadaki gerçek koşulları gözlemleyen tek yetkili kişidir. Uçuş yapılıp yapılamayacağına dair nihai karar pilota aittir; harici hava durumu API'leri veya sistem doğrulaması bu kararı geçersiz kılamaz.
+
+**Gerekçe:** Yerel mikro-iklim koşulları (rüzgar, sis, nem, toz) makro hava durumu tahminlerinin çözünürlüğünün altında kalır. Tarım droneları alçak irtifada uçar; sahadaki gerçek koşullar tahminlerden önemli ölçüde sapabilir.
+
+[ZORUNLU] Pilot, uygulamadan "Uçuş yapılamıyor" bildirimi yapar. Zorunlu alanlar:
+- `mission_id`
+- `reported_at` (zaman damgası)
+- `reason` (kısa metin — kötü hava, teknik arıza, güvenlik vb.)
+
+[ZORUNLU] Bildirim sisteme girildiği anda kabul edilir. **Doğrulama aşaması yoktur.** Sistem otomatik olarak:
+- Mission'ı erteler
+- Audit log'a kaydeder (`actor: PILOT`, `reason`, `mission_id`, `reported_at`)
+- İlgili çiftçiye SMS + uygulama içi bildirim gönderir
+
+[ZORUNLU] O günün hakedişi ödenmez. Hakediş yalnızca tamamlanan (FLOWN + kapsama-izi doğrulanmış) görevler üzerinden hesaplanır (bkz. **[KR-031]**, **[KR-065]**).
+
+[ZORUNLU] Ertelenen mission sezonluk pakette bir sonraki uygun slot'a otomatik taşınır. Çiftçinin `reschedule_token` hakkı **tüketilmez**; sistem içi `system_reschedule` olarak işaretlenir.
+
+[ZORUNLU] Bildirim kanalları: SMS + uygulama içi (WebSocket); e-posta kanal değildir.
+
+[KR-015-4] Admin Atama Değişikliği ve Otomatik Yeniden Dengeleme
+
+Amaç: Sistem otomatik atar; admin gerekirse değiştirir; sistem çakışmaları otomatik toparlar.
+
+[ZORUNLU] Sistem pilot atamasını otomatik yapar (Auto-Dispatcher).
+
+[ZORUNLU] Admin, herhangi bir Mission için pilot atamasını değiştirebilir (override).
+
+[ZORUNLU] Admin override zorunlu alanları:
+
+new_pilot_id
+
+override_reason (boş olamaz)
+
+admin_id (audit)
+
+[ZORUNLU] Override sonrası sistem:
+
+sadece “etkilenen gün/pencere” için planı yeniden dengeler (kapasite çakışması, SLA riski)
+
+admin’in seçtiği pilotu “geri alma” yoluyla otomatik bozmaz; sadece diğer görevleri ayarlar.
+
+[KR-015-5] Sezonluk Abonelikte Tarama Takvimi, Görünürlük ve Sınırlı Gün Değiştirme
+
+Amaç: Çiftçi sezon başında tarih aralığı + sıklık seçer; tüm sezon tarama günlerini görür; sezonda 2–3 kez gün kaydırabilir; pilot onayı gerekir.
+
+[ZORUNLU] “Yıllık abonelik” terminolojisi UI’da ve ürün dilinde “Sezonluk Paket” olarak adlandırılır. (KR-027 uyarlanır.) 
+
+
+[ZORUNLU] Sezonluk paket seçerken çiftçi:
+
+start_date, end_date
+
+interval_days (örn. pamuk: 7)
+
+toplam analiz sayısı (N) ve toplam fiyatı (snapshot üzerinden) görür
+
+[ZORUNLU] Çiftçi ekranında tüm sezon için “planlanan tarama günleri” takvim görünümünde gösterilir (computed schedule).
+
+[ZORUNLU] Sezonda sınırlı gün değiştirme hakkı:
+
+reschedule_tokens_per_season: varsayılan 2 (opsiyonel 3)
+- Hava engeli (Weather Block) / force majeure nedeniyle yapılan ertelemeler **reschedule token tüketmez**; sistem otomatik yeniden planlar ve audit log’a yazar.
+
+her token, planlı bir tarama gününü “pencere içinde” başka bir güne kaydırma talebidir
+
+[ZORUNLU] Gün değiştirme akışı:
+
+çiftçi “yeni gün önerir”
+
+sistem kapasite/SLA uygunluğuna göre alternatif slot/pilot önerir
+
+ilgili pilot(lar)a bildirim gider
+
+pilot onaylarsa yeni gün kesinleşir; onaylamazsa eski plan korunur
+
+[ZORUNLU] Gün değiştirme, audit log’a “kim, neyi, ne zaman değiştirdi” şeklinde yazılır.
+
+[KR-015-6] Büyük Alanlarda Çoklu Pilot Planlama (Pencere Bazlı Bölme)
+
+Amaç: Büyük alanlarda (örn. 10.000 dönüm) 7 günlük pencere içinde birden fazla pilotla tarama yapılabilsin.
+
+[ZORUNLU] Sistem, sezonluk abonelikte her interval_days penceresi için “hedef tarama tamamlanma” kuralı uygular.
+
+[OPSİYONEL] Büyük alan eşiği aşıldığında sistem, pencereyi “iş paketlerine” bölebilir:
+
+aynı pencere içinde 2–N pilot atanabilir
+
+her paket bağımsız uçuş/upload kanıtı üretir
+
+[ZORUNLU] Çoklu pilot atamalarında denetlenebilirlik:
+
+her pilot katkısı ayrı kanıt (flown/uploaded) üretir
+
+sonuç raporu tek sezonsal zaman serisine birleşir
+---
+
+## [KR-016] Drone - Tarla - Bitki Eşleştirme Politikası (Routing)
+
+**Amaç:** Veri setini doğru FieldID ve o tarihte geçerli bitki türü ile eşleştirip doğru bitki-özel YZ modelini otomatik seçmek.
+
+**Tarla Sınırı:** Ada/parsel girilir; TKGM/MEGSIS ile parsel geometrisi alınarak field boundary saklanır.
+
+**Uçuş Görevi:** Field boundary üzerinden görev dosyası üretilir (KML/KMZ/WPML). Pilot DJI Pilot 2 ile içe aktarıp standard mapping görevini başlatır.
+
+**Görev Dosyası Adlandırma Standardı:**
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+(Dosya adında PII bulunmaz; MissionID dosya adında ve metadata içinde yer alır)
+
+**İşlenmiş Çıktılar:** Pix4Dfields ile üretilen GeoTIFF çıktılar **kanonik standarttır**. Pix4Dfields drone-agnostik çalışır; DJI Mavic 3M, DJI M350+Sentera 6X, WingtraOne+MicaSense RedEdge-P ve diğer kayıtlı drone modellerini destekler. DJI Mavic 3M ile üretilen GeoTIFF göreli kalibrasyona dayanır; diğer modellerde mutlak radyometri sağlanır (bkz. KR-001 radyometri notu).
+
+**Yükleme Anı:** İstasyon batch metadata'dan Drone Seri No + MissionID (varsa) + kapsama-izi/footprint alanını alır. **Öncelik MissionID; yoksa kapsama-izi-boundary kesişimi.**
+
+**Bitki Türü:** FieldID için sezon bitkisi kaydı esas (1 Ekim - 31 Aralık aralığında güncellenebilir).
+
+---
+
+## [KR-017] YZ Modeli ile Analiz (Kanonik: İzolasyon + Tek Yönlü Akış + Job Semantiği)
+
+Bu KR, YZ analiz hattının **şemsiye** tanımıdır. Aşağıdaki KR’ler KR‑017’nin **operasyonel ayrıştırmasıdır**:
+- **[KR-070]**: Worker izolasyonu (inbound kapalı) + egress allowlist (network policy)
+- **[KR-071]**: One-way data flow + allowlist’in doğru yeri (Ingress) + mTLS cihaz kimliği
+- **[KR-072]**: Dataset lifecycle + chain-of-custody (manifest/hash/signature/verification) — “hileyi ispat” katmanı
+- **[KR-073]**: Untrusted file handling + AV1/AV2 + sandbox dönüşüm + quarantine
+
+[ZORUNLU]
+- AnalysisJob kimliği: **FieldID + CropType + MissionID (varsa)**; **PII taşınmaz**
+- Bitkiye özel YZ modeli routing (yönlendirme) ile otomatik seçilir. Bu karar; **MissionID, FieldID ve bitki türü** ile kayıt altına alınır (`model_id`, `model_version`).
+- Pilot tarafında görünen görev bilgisi: **MissionID, il/ilçe/mahalle-köy, ada/parsel (ParcelRef), bitki türü, hedef tarama penceresi, teslim son tarihi**. **Çiftçi adı/telefonu gösterilmez**
+- Hafıza kartları yerel istasyonda güvenlik kontrollerinden (**[KR-072]**, **[KR-073]**) geçmeden analize girmez: hash manifest + AV tarama + karantina kararları + allowlist uzantılar.
+- EdgeKiosk/istasyon tarafında **model çalıştırma yoktur** (model hırsızlığı riskine karşı).
+- Worker (YZ/processing) **inbound istek kabul etmez** (**[KR-070]**); job yalnızca dispatch/queue ile alınır. Web (PWA) ve public backend Worker ağına **doğrudan erişemez**.
+- Worker, **[KR-018 / KR-082]** kalibrasyon “hard gate” şartı sağlanmadan işi kabul etmez (`requires_calibrated=true`) , `available_bands[]` doğrulaması yapılmadan analiz yollarını belirlemez ve dataset kanıt zinciri doğrulanmadan çalıştırmaz (**[KR-072]**).
+- Sonuçlar **kesinlikle tek yönlü** yayımlanır (**[KR-071]**): **FieldID + CropType + katmanlar + skor/uyarı** → sonuç servisi → web (PWA).
+- Erişim denemeleri/deny olayları ve kritik adımlar audit/WORM log’a düşer (bkz. **BÖLÜM 3**).
+
+### KR-017 Kabul Testleri (E2E)
+- Edge’de model çalıştırma denemesi → build/CI policy ile **yasak** (repo’da model ağırlıkları bulunamaz)
+- Worker’a inbound HTTP denemesi → **başarısız** (policy deny)
+- Calibrated olmayan dataset ile job → Worker **reddeder**
+- Manifest hash mismatch → dataset **REJECTED_QUARANTINE**
+
+**İlgili maddeler:** [KR-070], [KR-071], [KR-072], [KR-073], [KR-016], [KR-018 / KR-082], [KR-063], [KR-066], [KR-084], [KR-040-043], EK-SOP-SEC, BÖLÜM 3, BÖLÜM 4
+
+---
+## [KR-018 / KR-082] RADIOMETRY - Tam Radyometrik Kalibrasyon Zorunluluğu + Spektral Kapasite Algılama (Radiometric Calibration + Spectral Capability Detection)
+
+## Amaç
+- Model eğitimi (training: modelin öğrenmesi) ve saha sonuçları arasında tutarlılık (training-serving parity: eğitim/çalıştırma aynı dağılım).
+- Müşteri memnuniyeti için zaman serisi (time-series: haftalık takip) ve tarlalar arası kıyasın (cross-field comparison: farklı tarlaları karşılaştırma) güvenilir olması.
+- **v1.2.0:** Farklı sensör sınıflarından gelen verinin bant kapasitesine göre dinamik analiz yollarına yönlendirilmesi (graceful degradation).
+
+## Kural (Hard Gate: sert kapı)
+- **Calibrated Dataset (kalibre veri seti)** üretilmeden **AnalysisJob (analiz işi)** başlatılamaz.
+- Worker (AI/Processing: yapay zekâ işleyici) **ham DN (Digital Number: sensör ham sayısal değeri)** veya kalibrasyonu belirsiz veriyi kabul etmez.
+
+## Spektral Kapasite Algılama (Capability Detection) — v1.2.0
+
+### Bant Sınıfları ve İndeks Kapasiteleri
+
+| Bant Sınıfı | Minimum Bantlar | Mevcut İndeksler | Örnek Sensörler |
+|---|---|---|---|
+| **BASIC_4BAND** | Green, Red, RedEdge, NIR | NDVI, NDRE, GNDVI, CIR | DJI Mavic 3M |
+| **EXTENDED_5BAND** | Blue, Green, Red, RedEdge, NIR | NDVI, NDRE, EVI, SAVI, chlorophyll-a, tüm Sentinel-2 uyumlu indeksler | MicaSense RedEdge-P, Sentera 6X, Altum-PT |
+| **THERMAL** (opsiyonel ek) | LWIR (8–14 μm) | Canopy-soil sıcaklık deltası, su stresi termal indeks (CWSI) | Altum-PT, Sentera 6X Thermal |
+
+### Graceful Degradation Kuralları
+
+[ZORUNLU] intake_manifest'te `available_bands[]` array alanı zorunludur. Bu alan sensörün ürettiği bantları listeler.
+
+[ZORUNLU] Worker pipeline, `available_bands[]` içeriğine göre analiz yollarını dinamik olarak belirler:
+- **Core pipeline** (her zaman çalışır): NDVI, NDRE, GNDVI — minimum 4 bant (Green + Red + RedEdge + NIR) gerektirir.
+- **Extended pipeline** (Blue bant mevcutsa): EVI, SAVI, chlorophyll-a, Sentinel-2 cross-validation — Blue bant gerektirir.
+- **Thermal pipeline** (LWIR mevcutsa): Canopy sıcaklık haritası, CWSI, sulama stresi — bkz. **[KR-084]**.
+
+[ZORUNLU] `drone_capability_matrix.yaml` dosyası her `drone_type` enum değeri için desteklenen bantları ve bant sınıfını tanımlar. intake_manifest validasyonu bu matris ile çapraz doğrulanır; manifest'teki `available_bands` ile matristeki tanım uyuşmazsa `QC.BAND_MISMATCH_WARNING` üretilir.
+
+[ZORUNLU] Rapor çıktısı bant kapasitesine göre katmanlı sunulur:
+- **4 bant:** Temel Sağlık Raporu (NDVI, NDRE, stres göstergeleri, hastalık/zararlı/yabancı ot tespiti)
+- **5 bant:** Genişletilmiş Rapor (+ EVI, chlorophyll detay, Sentinel-2 uyumlu indeksler)
+- **5 bant + termal:** Kapsamlı Rapor (+ termal stres haritası, sulama optimizasyonu önerileri)
+- Çiftçi, hangi rapor seviyesini aldığını PWA'da görür; eksik bantlar nedeniyle üretilemeyen katmanlar için açıklama notu gösterilir.
+
+### Red Edge Bant Pozisyonu Farkı (Dikkat)
+DJI Mavic 3M Red Edge bandı ~730 nm'dir (Sentinel-2 Band 6'ya yakın). MicaSense/Sentera Red Edge bandı ~715–717 nm'dir (Sentinel-2 Band 5'e yakın). Bu fark NDRE hesaplamalarında farklı sonuçlar üretir. Uydu verisi ile çapraz doğrulama yapılacaksa sensör-bazlı Red Edge offset katsayısı `drone_capability_matrix.yaml`'da tutulur ve Worker'da düzeltme uygulanır.
+
+### Blue Bant Kalibrasyon Notu
+MicaSense RedEdge-P/Altum-PT: Blue bant (475 nm ±32 nm) fabrika kalibrasyonlu; DLS2 + reflectance panel ile mutlak reflektans üretir.
+Sentera 6X: Blue bant (475 nm ±30 nm) fabrika kalibrasyonlu; ILS + reflectance panel ile radyometrik doğruluk sağlanır.
+Her iki sensör de Pix4Dfields'te tam radyometrik kalibrasyon desteğindedir.
+
+## İstasyon Akışı (Real-world: saha şartlarına uygun)
+
+**Yerel istasyon iki fiziksel makineye ayrılmıştır (M1 + M2, birbirine ağ bağlı DEĞİLDİR):**
+
+1) **M1 = İşleme İstasyonu (internet YOK — sadece Pix4D lisans sunucusu allowlist)**:
+   - Kart alım: PCIe SD okuyucu (3×10-slot) ile ham veri okuma
+   - AV (Anti-Virus: zararlı yazılım taraması) + manifest/hash (bütünlük kanıtı) + quarantine (karantina: izolasyon)
+   - Eşleştirme: MissionID/FieldID ile drone verisini eşleştirme
+   - **Pix4Dfields** ile **tam radyometrik kalibrasyon** (GPU hızlandırmalı, 12 GB VRAM)
+   - Reflectance Panel (yansıma paneli) kullanımı SOP’a göre zorunlu
+   - Processing Report + Calibration Result + QC Report üretimi
+   - Çıktı: CalibratedDataset + tüm raporlar → fiziksel medya (USB/SSD) ile M2’ye aktarılır
+   - **M1 donanım (marka bağımsız):** CPU 16+ çekirdek, 128 GB DDR5, GPU 12 GB VRAM, 1 TB NVMe + 2×2 TB scratch (RAID 0), 4 TB SATA (24h retention), 3×10-slot PCIe SD okuyucu, UPS 1500 VA, Ağ: sadece Pix4D lisans sunucusu allowlist
+
+2) **M2 = Gönderim İstasyonu (sadece outbound mTLS — port 443 → PLATFORM_API_URL)**:
+   - Fiziksel medyadan CalibratedDataset + raporlar + manifest/hash alınır
+   - Paketleme: transfer_batch oluşturma, chunk/resumable hazırlık
+   - Upload: mTLS ile Platform/Ingress’e gönderim → Worker analiz kuyruğu
+   - **M2 donanım (marka bağımsız):** CPU 8+ çekirdek, 32 GB RAM, 1 TB NVMe, UPS 1500 VA, Ağ: sadece outbound 443
+
+**Makineler arası geçiş:** Fiziksel medya + STATION_OPERATOR çalışanı üzerinden yapılır.
+**Güvenlik modeli:** Prosedürel SOP + fiziksel erişim kontrolü (ağ politikası değil).
+
+## Platform Sorumluluğu (Backend: sunucu)
+- Calibration Gate (kalibrasyon kapısı): calibrated yoksa job açma
+- QC Gate (kalite kapısı): PASS/WARN/FAIL (geç/uyarı/kal) kararını sakla, UI’a taşı, audit trail (denetim izi) üret
+
+## Çıktı Sözleşmeleri (Contracts: ortak veri şemaları)
+- CalibrationJob / CalibrationResult
+- QCReport (pass_warn_fail + flags + recommended_action)
+- AnalysisJob yalnızca `requires_calibrated=true` ile açılır
+
+
+---
+
+## [KR-083] İl Operatörü
+
+**Rol Kodu:** ProvinceOperator
+**Gelir Payı:** Sözleşmeye göre %5-%15 kar payı alır (admin panelden tanımlanır).
+
+**İhtiyaç:** KPI + kapasite planlama (abonelik sayısı, hizmet verilen alan, ödeme toplamı, ilçe yoğunluğu, SLA).
+
+**PII Kuralı:** İl Operatörü **PII GÖRMEZ**.
+
+**Sunum İki Katmanlı:**
+- (A) Merkez - PII ayrı
+- (B) Operatör - SubscriberRef + ilçe veya 1-2 km grid
+
+**Kar Payı Hesaplama ve Ödeme Mekanizması:**
+
+[ZORUNLU] Hesaplama sistem tarafından **otomatik** yapılır. Manuel hesaplama kabul edilmez.
+
+Formül:
+```
+kar_payı = tamamlanan_abonelik_alanı_donum
+           × sezon_analiz_sayısı
+           × kar_payı_oranı (%)
+```
+
+[ZORUNLU] Ödeme döngüsü: Ayın ilk 7 günü içinde, pilot hakediş ödemeleriyle aynı döngüde (bkz. **[KR-031]**).
+
+[ZORUNLU] Onay hiyerarşisi:
+- BILLING_ADMIN hesaplanan tutarı raporlar ve ödeme için sunar.
+- CENTRAL_ADMIN nihai onayı verir; onay olmadan ödeme yapılamaz.
+
+[ZORUNLU] Oran değişikliği:
+- Yalnızca CENTRAL_ADMIN yapabilir.
+- Değişiklik audit log'a yazılır (`PROVINCE_OPERATOR.RATE_CHANGED`: eski oran, yeni oran, geçerlilik tarihi).
+- Değişiklik **geriye dönük uygulanamaz**; yalnızca bir sonraki ödeme döngüsünden itibaren geçerlidir.
+
+---
+
+
+## [KR-084] Termal Veri İşleme ve Sulama Stresi Analizi (Thermal Pipeline)
+
+**Amaç:** Termal bant (LWIR 8–14 μm) mevcut olduğunda sulama stresi, su yönetimi ve erken dönem bitki sağlığı sorunlarını görünür bantlardan önce tespit etmek; termal bant yoksa analiz akışını etkilememek (graceful degradation).
+
+**Kapsam / Applies-to:** contracts, worker, platform (rapor katmanı)
+
+### Zorunluluklar (MUST)
+
+[ZORUNLU] Termal pipeline yalnızca `intake_manifest.available_bands[]` içinde `LWIR` veya `THERMAL` bant tanımı varsa etkinleşir. Termal bant yoksa bu KR'nin hiçbir kuralı uygulanmaz; temel ve genişletilmiş analiz pipeline'ları normal çalışır.
+
+[ZORUNLU] Termal kalibrasyon gereksinimleri sensör tipine göre belirlenir:
+- **Altum-PT (FLIR Boson 320×256):** Fabrika radyometrik kalibrasyon sertifikası + Pix4Dfields termal kalibrasyon pipeline'ı. Çıktı: radyometrik sıcaklık haritası (°C/K).
+- **Sentera 6X Thermal (FLIR Boson 640):** Fabrika radyometrik kalibrasyon + ILS düzeltmesi. Çıktı: radyometrik sıcaklık haritası (°C/K).
+- Termal kalibrasyon kanıtı `calibration_result.json` içinde `thermal_calibration` bölümünde tutulur.
+
+[ZORUNLU] Worker termal analiz çıktıları:
+- **Canopy sıcaklık haritası:** Bitki örtüsü yüzey sıcaklığı (°C) raster katmanı
+- **CWSI (Crop Water Stress Index):** 0.0 (stressiz) — 1.0 (tam stres) normalize indeks
+- **Canopy-soil sıcaklık deltası:** Bitki örtüsü ile toprak yüzeyi arasındaki sıcaklık farkı haritası
+- **Sulama etkinliği göstergesi:** CWSI + NDVI kombinasyonuyla üretilen türev katman
+
+[ZORUNLU] Termal katmanlar `THERMAL_STRESS` LayerCode ile raporda sunulur (bkz. KR-064). Çiftçi PWA'da termal stres haritasını harita katmanı olarak görür; renk skalası Koyu Kırmızı (yüksek stres) → Turuncu (orta) → Açık Sarı (düşük) gradient'idir.
+
+[ZORUNLU] Termal verinin çözünürlüğü multispektral veriden düşüktür (Altum-PT: 320×256 vs 3.2 MP MS; Sentera: 640 vs 1.2 MP MS). Worker, termal katmanı MS çözünürlüğüne yeniden örnekleyerek (upsampling/interpolation) harita katmanlarıyla piksel hizalaması sağlar. Yeniden örnekleme yöntemi ve orijinal çözünürlük metadata olarak raporda tutulur.
+
+### Kanıt / Artefact
+- `calibration_result.json` → `thermal_calibration{}` bölümü
+- `thermal_analysis_result.json` (CWSI haritası + canopy temp + delta)
+- `qc_report.json` → `thermal_qc{}` (sıcaklık aralığı makul mü, sensör drift var mı)
+
+### Audit / Log
+- `THERMAL.PIPELINE_ACTIVATED` — termal bant algılandı, pipeline başlatıldı
+- `THERMAL.CALIBRATION_VERIFIED` — termal kalibrasyon kanıtı doğrulandı
+- `THERMAL.QC_PASS/WARN/FAIL` — termal QC sonucu
+- `THERMAL.RESULT_PUBLISHED` — termal katmanlar rapora eklendi
+
+### Hata Modları
+- Termal kalibrasyon kanıtı eksik/geçersiz → `THERMAL.QC_FAIL` → termal pipeline devre dışı, MS pipeline normal devam eder, çiftçiye "termal analiz bu uçuş için üretilemedi" bildirimi
+- Sıcaklık değerleri fiziksel olarak anlamsız aralıkta (< -20°C veya > 70°C tarım bağlamında) → `THERMAL.QC_WARN` → admin inceleme
+
+### Test / Kabul Kriterleri
+- Termal bant olmayan manifest ile job → termal pipeline **etkinleşmez**, temel analiz normal çalışır
+- Termal bant olan manifest + kalibrasyon kanıtı eksik → `THERMAL.QC_FAIL` + termal katman üretilmez
+- Termal bant + kalibrasyon OK → CWSI haritası + canopy temp katmanı üretilir ve raporda görünür
+- CWSI değerleri 0.0–1.0 aralığında; aralık dışı değer → `THERMAL.QC_WARN`
+
+### Cross-refs
+- **[KR-018 / KR-082]:** Spektral kapasite algılama ve graceful degradation
+- **[KR-017]:** Şemsiye analiz hattı (termal pipeline bu şemsiyenin altındadır)
+- **[KR-072]:** Dataset lifecycle (termal veriler de aynı kanıt zincirine tabidir)
+- **[KR-064]:** Layer Registry (THERMAL_STRESS katmanı)
+
+---
+## [KR-019] Expert Portal (Uzman İnceleme)
+
+- Uzman portalı, modelin düşük güven verdiği veya çelişkili durumlarda manuel inceleme için kullanılır (**PII görünmez**)
+- Üyelik self-signup **değildir**: uzman hesabı ADMIN kontrollü açılır (curated onboarding)
+- Bildirim kanalları: **SMS + web portal içi gerçek zamanlı bildirim (WebSocket)**; e-posta kullanılmaz
+- Erişim kuralı: uzman **yalnızca kendisine atanmış** incelemeleri görür (ownership check zorunlu)
+- Uzman karar formatı (özet): `confirmed | corrected | rejected | needs_more_expert`
+- Uzman geri bildirimi `training_grade` ile etiketlenir: `enum A|B|C|D|REJECT`; ayrıca `grade_reason` alanı tutulur (max 200 karakter)
+
+---
+
+## [KR-020] Ücretlendirme
+
+## [KR-021] Genel Prensip
+
+- Ücretler bitki türü ve analiz seçeneğine göre: tek seferlik analiz veya **Sezonluk Paket** (abonelik)
+- Birim: **dönüm**. Kullanıcı m² girse bile sistem dönüme çevirip hesaplar
+- Sezonluk Paket'te periyot seçilebilir; sistem bitkiye göre önerir. Öneri dışında seçimde uyarı gösterilir
+
+---
+
+## [KR-022] Fiyat Yönetimi Politikası
+
+- Fiyatlar uygulamada serbest **yazılmaz**; tek kaynak **PriceBook** (Fiyat Kataloğu)
+- Değişiklik sadece **ADMIN** rolünden yönetim paneliyle
+- Versiyonlu + tarih aralıklı; geçmiş siparişlerin fiyatı sonradan **değişmez**
+- Sipariş/abonelik oluşurken fiyat snapshot siparişe yazılır
+- Değişiklikler **audit log'a yazılır**
+
+---
+## [KR-023] Örnek Fiyat Kurgusu (Pamuk)
+
+| Seçenek | Liste Fiyat | İlk Yıl / Abonelik Kurgusu |
+|---------|-------------|---------------------------|
+| Tek seferlik analiz | 50 TL/dönüm/analiz | İlk yıl tanıtım: %50 indirim → 25 TL/dönüm/analiz |
+| Sezonluk Paket | - | Tanıtım fiyatı üzerinden ekstra %25 indirim → 20 TL/dönüm (Sezonluk Paket birim fiyatı) |
+---
+
+## [KR-024] Önerilen Tarama Periyodu (Gün)
+
+| Bitki | Önerilen Periyot (gün) |
+|-------|------------------------|
+| Pamuk | 7-10 |
+| Antep Fıstığı | 10-15 |
+| Mısır | 15-20 |
+| Buğday | 10-15 |
+| Ayçiçeği | 7-10 |
+| Üzüm | 7-10 |
+| Zeytin | 15-20 |
+| Kırmızı Mercimek | 10-15 |
+
+---
+
+## [KR-025] Analiz İçeriği (Hizmet Kapsamı)
+
+**Temel İlke:** Sistem ilaçlama kararı **vermez**; yalnızca tespit, risk skoru ve erken uyarı sağlar.
+
+**Rapor Çıktısı (tarla + bitki bazında) — Bant Kapasitesine Göre Katmanlı:**
+
+**Temel Rapor (4+ bant — tüm sensörler):**
+- Health Score (NDVI/NDRE tabanlı)
+- Su/azot stresi (indeks tabanlı göstergeler)
+- Hastalık/mantar bulguları
+- Zararlı böcek riski
+- Yabancı ot yoğunluğu
+
+**Genişletilmiş Rapor (5 bant — Blue bant mevcutsa):**
+- Yukarıdakilere ek:
+- EVI (Enhanced Vegetation Index) — biyokütle ve yaprak alanı detayı
+- Chlorophyll-a yoğunluk haritası — beslenme durumu detayı
+- Sentinel-2 uyumlu indeks seti — uydu verisi ile çapraz doğrulama imkânı
+
+**Kapsamlı Rapor (5 bant + termal — termal bant mevcutsa, bkz. KR-084):**
+- Yukarıdakilere ek:
+- Termal stres haritası (canopy-soil sıcaklık deltası)
+- Sulama etkinliği göstergesi (CWSI tabanlı)
+- Erken dönem su stresi uyarısı (görünür bantlardan önce tespit)
+
+> **Not:** Çiftçi PWA'da hangi rapor seviyesini aldığını görür. Eksik bantlar nedeniyle üretilemeyen katmanlar için bilgi notu gösterilir; bu durum hata değil, sensör kapasitesi ile ilgili normal bir kısıtlamadır.
+
+---
+
+## [KR-026] Sunum Biçimi
+
+- Harita katmanları (ısı haritası / grid / zonlama)
+- Zaman serisi (Sezonluk Paket'te önceki taramalarla karşılaştırma)
+- Özet rapor (PDF ve/veya uygulama içi rapor)
+
+---
+
+## [KR-027] Sezonluk Paket Planlayıcı (Subscription Scheduler)
+
+**Amaç:** Sezonluk Paket seçen kullanıcılar için otomatik, periyodik Mission üretimi.
+
+**Tek Seferlik vs Sezonluk Paket:**
+- **Tek seferlik:** Kullanıcı talep eder → 1 Mission → tamamlanır
+- **Sezonluk Paket:** Kullanıcı periyot seçer → ilk Mission + scheduler → otomatik yeni Missionlar
+
+**Veri Modeli:**
+
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+**Scheduler Kuralı:**
+1. Her gün/saat cron job çalışır
+2. `status=ACTIVE AND next_due_at <= now()` abonelikleri bulur
+3. Her biri için yeni Mission oluşturur (status=PLANNED)
+4. `next_due_at = next_due_at + interval_days` güncellenir
+5. Duplicate önlemek için `FOR UPDATE SKIP LOCKED` kullanılır
+
+**Scheduler SQL:**
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+**API Endpoint'leri:**
+- `POST /subscriptions` — yeni abonelik oluştur
+- `GET /subscriptions/{id}` — detay görüntüle
+- `POST /subscriptions/{id}/pause` — duraklat (PAUSED)
+- `POST /subscriptions/{id}/resume` — devam ettir (ACTIVE)
+- `POST /subscriptions/{id}/cancel` — iptal et (CANCELLED)
+
+---
+
+## [KR-028] Mission Yaşam Döngüsü ve SLA Alanları
+
+**Mission Tanımı:** Bir tarlanın belirli bir tarihte yapılacak tek analiz görevi. Tek seferlik talepten veya Sezonluk Paket'ten oluşabilir.
+
+**Veri Modeli:**
+
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+**Status Geçişleri:**
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+**Pilot Inbox (Bekleyen Görevler):**
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+**Mission - Subscription İlişkisi:**
+- `subscription_id` null ise: tek seferlik analiz
+- `subscription_id` dolu ise: Sezonluk Paket'ten otomatik üretilmiş
+
+---
+
+## [KR-029] YZ Eğitim Geri Bildirimi (Training Feedback Loop)
+
+**Amaç:** Uzman düzeltmelerini YZ modeline geri beslemek ve model iyileştirmesi yapmak.
+
+**Veri Modeli:**
+
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+**Uzman Verdict Payload (API):**
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+**RabbitMQ Mesaj Şeması (`ai.feedback.v1`):**
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+**Expert_reviews vs Feedback_records:**
+- `expert_reviews` → Uzman portal UI için (review assignment, status tracking)
+- `feedback_records` → YZ training pipeline için (pure data export)
+- İlişki: `feedback_records.review_id` → `expert_reviews.review_id`
+
+---
+
+## [KR-032] Training Export Standardı
+
+**Amaç:** Uzman feedback'lerini standart formatta export ederek model eğitim pipeline'ına aktarmak.
+
+### Format 1: JSONL (Sınıflandırma Düzeltmeleri)
+
+**Dosya adı:** `training_feedback_cls_v1.jsonl`  
+**Schema:** `training.feedback.cls.v1`  
+**Format:** Her satır bir JSON örneği
+
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+### Format 2: GeoJSON (Segmentation/Alan Verileri)
+
+**Dosya adı:** `training_feedback_geo_v1.geojson`  
+**Schema:** `training.feedback.geo.v1`
+
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+### Admin Export Endpoint
+
+**Endpoint:** `POST /admin/training/export`
+
+**Request:**
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+**Export SQL:**
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+**Schema Versiyonlama:**
+- v1.x: geriye uyumlu eklemeler (optional field)
+- v2.0: breaking change (schema migration gerektirir)
+
+---
+
+## [KR-030] Notlar, Sınırlar ve Uyum
+
+- **Drone standardı:** Drone-agnostik mimari; desteklenen drone/sensör kombinasyonları: DJI Mavic 3M (birincil/önerilen; bkz. KR-001 radyometri notu + KR-034), DJI Matrice 350 RTK + Sentera 6X, WingtraOne Gen II + MicaSense RedEdge-P, Parrot Anafi USA + Sequoia+, AgEagle eBee X + Altum-PT. Tüm modeller drone_registry.yaml'a kayıtlı olmalıdır. Kalibrasyon yazılımı: Pix4Dfields (tüm markalar desteklenir).
+- **Spektral bant politikası (v1.2.0):** Minimum **4 multispektral bant** (Green + Red + RedEdge + NIR) zorunludur; 4 banttan az veri kabul edilmez. **5. bant (Blue)** ve **termal bant (LWIR)** opsiyonel zenginleştirmedir — mevcutsa kullanılır, yoksa temel analiz pipeline'ı çalışır (graceful degradation). Bant mevcudiyeti `intake_manifest.available_bands[]` alanından belirlenir; `drone_capability_matrix.yaml` ile çapraz doğrulanır. Bkz. **[KR-018/KR-082]** ve **[KR-084]**.
+- Görüntüler yerel istasyon (M1+M2) üzerinden sisteme alınır; log kayıtları denetim izi oluşturur
+- **KVKK:** PII ile operasyon/raporlama verisi ayrıdır; il operatörü PII görmez
+- Model çıktısı karar değildir; nihai aksiyon çiftçi ve/veya ziraat mühendisinin sorumluluğundadır
+
+---
+
+## [KR-034] Drone Tedarik Bağımsızlığı — DJI Aktif Operasyon Planı
+
+**Amaç:** DJI ürünlerine erişimin kısıtlanması veya yasaklanması durumunda TarlaAnaliz operasyonunun kesintisiz sürmesini sağlamak. Mimari drone-agnostik tasarlandığından teknik değişiklik minimumdur; geçiş planı operasyonel ve tedarik temelli bir yönetim kararıdır.
+
+> **v1.2.0 Statü Güncellemesi:** Bu KR artık salt "risk planı" değil, **aktif operasyon planıdır**. DJI M3M tedarik sıkıntılarının aşılamaz görünmesi, 5 bantlı sensörlerin (MicaSense RedEdge-P, Sentera 6X, Altum-PT) sisteme tam entegre edilmesi ve graceful degradation modelinin (KR-018/KR-082) devreye girmesiyle, DJI dışı sensörlere geçiş artık somut bir operasyonel seçenektir. Senaryo A ve B artık "olasılık planı" değil, "uygulanabilir alternatifler"dir.
+
+**Tetikleyici Koşullar:** İthalat yasağı, tedarik zinciri kesintisi, yasal düzenleme, ihracat kısıtlaması, **veya mevcut DJI M3M stok tükenmesi / yenileme imkânsızlığı**.
+
+**Kritik Teknik Not — DJI Mavic 3M ve Radyometri:**
+Pix4Dfields ile M3M için üretilen kalibrasyon **görelidir (relative)**; mutlak reflectance yerine, reflectance'a orantılı göreli değerler üretilir. Mutlak radyometrik tutarlılık gerektiren kullanım durumlarında (zaman serisi güvenilirliği, training-serving parity) MicaSense RedEdge-P / Altum-PT veya Sentera 6X sınıfı sensörler tercih edilir. KR-018 hard-gate her iki yolu da kapsar; fark kalibrasyon kalitesidir, geçerlilik kriteri değil.
+
+**[SENARYO A] Minimum Değişiklik / Hızlı Geçiş:**
+
+[ZORUNLU] Senaryo A seçilirse:
+- Platform: DJI dışı RTK'lı multirotor (operasyon rutini korunur)
+- Sensör: Parrot Sequoia+ **veya** MicaSense RedEdge-P (Pix4Dfields "tam radiometric correction" destekli listesinde her ikisi de yer alır)
+- Kalibrasyon akışı: Değişmez — Pix4Dfields → GeoTIFF kanonik çıktı → KR-018 hard-gate manifest
+- drone_registry.yaml güncellenir; CropOpsProfile effort_factor gerekirse revize edilir
+- Tüm diğer kanonik kurallar (KR-017, KR-070–073, KR-072) aynen geçerliliğini korur
+
+**[SENARYO B] Uzun Vadeli DJI Bağımsızlığı / Büyük Alan Verimliliği:**
+
+[ZORUNLU] Senaryo B seçilirse:
+- Platform: VTOL / fixed-wing
+  - WingtraOne Gen II + MicaSense RedEdge-P (VTOL verim; Wingtra'nın Pix4Dfields entegrasyon kılavuzu mevcuttur)
+  - AgEagle eBee X + MicaSense Altum-PT (fixed-wing geniş alan + multispektral + termal)
+- Radyometri: MicaSense "raw → radiance → reflectance" modeli; mutlak radyometrik tutarlılık için en güçlü zemin
+- Ölçek avantajı: Uçuş başına kapsama alanı büyür; 100k–300k dönüm ve üstü günlük hacimde verim artar
+- drone_registry.yaml ve SOP dokümanları güncellenir
+
+**Senaryo Karar Matrisi:**
+
+| Kriter | Senaryo A | Senaryo B |
+|--------|-----------|-----------|
+| Hızlı devreye giriş | ✅ Kısa | ⏳ Orta-Uzun |
+| DJI riski sıfırlama | ✅ | ✅ |
+| Mutlak radyometri (KR-018 kalite) | ✅ (Sequoia+/RedEdge-P) | ✅ (RedEdge-P/Altum-PT) |
+| 100k+ dönüm/gün verim | ⚠️ Drone sayısı artar | ✅ Uçuş başına alan büyük |
+| CAPEX | Orta | Yüksek |
+| Operasyon karmaşıklığı | Düşük (multirotor alışkanlığı) | Orta (VTOL/fixed-wing eğitim) |
+
+**Yönetim Kararı:** Zaman baskısı ve ölçek hedefine göre seçim yapılır. Her iki senaryo da KR-018, KR-072, KR-073 ile tam uyumludur. Teknik mimari değişmez; yalnızca drone_registry.yaml, Pix4Dfields proje şablonu ve gerekirse CropOpsProfile güncellenir.
+
+> **Spektral Yükseltme Avantajı (v1.2.0):** Her iki senaryoda da DJI M3M'den 5 bantlı sensöre geçiş, Blue bant kazanımı (EVI, SAVI, chlorophyll-a indeksleri) ve opsiyonel termal kapasite (Altum-PT / Sentera 6X Thermal) sağlar. Bu, KR-018/KR-082'deki graceful degradation modeliyle tam uyumludur — geçiş sırasında mevcut 4 bantlı M3M verileri de işlenmeye devam eder.
+
+**Cross-refs:** KR-001 (radyometri notu), KR-015, KR-016, KR-018/KR-082 (spektral kapasite), KR-072, KR-084 (termal pipeline)
+
+---
+
+## [KR-031] Pilot Hakediş ve Ödeme Politikası
+
+- Pilotlar, bir ay içinde **ONAYLANMIŞ** görevlerde taradıkları alan üzerinden hakediş kazanır
+- Ödeme dönemi: takip eden ayın ilk haftası (1-7 arası) toplu ödeme
+- Birim fiyat: **varsayılan 3 TL/dönüm**; il bazında CENTRAL_ADMIN tanımlayabilir (PilotRateByProvince)
+- Öneri: ay sonu 23:59 cut-off + 3 iş günü itiraz penceresi + ilk 7 gün içinde ödeme
+- **Observed kapsama-izi olmadan ödeme YOK; MissionID eşleşmeden ödeme YOK**
+
+
+## # [KR-033] Ödeme ve Manuel Onay (Müşteri Tahsilat Akışı)
+
+**Amaç:** Çiftçi / Kooperatif / Üretici Birliği tarafından açılan **tek seferlik Mission** veya **Sezonluk Paket Subscription** taleplerinde tahsilatı standartlaştırmak ve talebin "işlenebilir" hale gelmesini **ödeme onayına** bağlamak.
+
+> ⚠️ **Temel Prensip:** Ödeme onaylanmadan hiçbir tarla analizi başlatılamaz. Mission atama kuyruğuna alınmaz; Subscription scheduler çalışmaz. Bu kural istisnasızdır.
+
+> ⚠️ **PII Notu:** Kimlik modeli gereği kullanıcı e-postası sistemde zorunlu alan değildir. Platform DB'de kullanıcıya ait e-posta tutulmaz. Dekont, uygulama üzerinden yüklenir; platform DB'de yalnızca `receipt_blob_id` gibi opak bir referans tutulur (object store / PII vault). Dekont içeriği ve yükleme kanalı PII vault sorumluluğundadır.
+
+---
+
+## 1. Ödeme Yöntemleri
+
+| Yöntem | Açıklama |
+|---|---|
+| `CREDIT_CARD` | Online ödeme sağlayıcısı üzerinden (hosted checkout / payment session). Webhook ile otomatik onay. |
+| `IBAN_TRANSFER` | Çiftçi banka havalesi yapar. Transfer açıklamasına **Tarla ID** yazar. Dekontu uygulama üzerinden yükler. Merkez Yönetim (CENTRAL_ADMIN) manuel olarak onaylar. |
+
+> **Kimlik eşleştirme prensibi (IBAN_TRANSFER):** Sistem, Tarla ID üzerinden ödemeyi doğrudan ilgili tarlaya ve talebe bağlar. Her tarlanın benzersiz ID'si web sitesi tarla detay sayfasında görünürdür. Bu sayede "hangi tarla için ödeme yapıldı?" sorusu açıkça çözülür ve admin eşleştirme işlemi sistemin otomatik yapmasına olanak tanır.
+
+---
+
+## 2. Ödeme Durumları (PaymentIntent.status)
+
+| Durum | Açıklama |
+|---|---|
+| `PAYMENT_PENDING` | Ödeme bekleniyor. Intent açıldı, tahsilat doğrulanmadı. |
+| `PAID` | Ödeme tamamlandı. Provider webhook veya CENTRAL_ADMIN manuel onayı ile geçilir. |
+| `REJECTED` | Ödeme reddedildi. Gerekçe zorunludur (dekont uyuşmazlığı, eksik bilgi vb.). |
+| `CANCELLED` | Ödeme intent'i iptal edildi. Yalnızca `PAYMENT_PENDING` iken kullanıcı veya admin tarafından yapılır. |
+| `REFUNDED` | Ödeme iade edildi. Yalnızca `PAID` sonrası CENTRAL_ADMIN aksiyonu ile olur. |
+
+### Durum Geçiş Kuralları
+
+- **Kural-1 (Mission):** `PAID` olmadan Mission `ASSIGNED` olamaz.
+- **Kural-2 (Subscription):** `PAID` olmadan Subscription `ACTIVE` olamaz; `PENDING_PAYMENT` durumunda scheduler Mission üretmez.
+- **Kural-3 (İptal):** `CANCELLED` yalnızca `PAYMENT_PENDING` iken yapılabilir.
+- **Kural-4 (İade):** `REFUNDED` yalnızca `PAID` sonrası admin aksiyonu ile gerçekleşir.
+- **Kural-5 (Geçersiz geçiş):** `PAID` olan bir intent tekrar `PAID` yapılamaz; `EXPIRED` veya `CANCELLED` olan bir intent `PAID` yapılamaz. Tüm yasadışı geçiş denemeleri `PaymentStateMachine` tarafından anlamlı domain hatası olarak reddedilir.
+
+> **Süre dolumu (Expire) politikası:** Sistemde otomatik expire yoktur. `PAYMENT_PENDING` durumundaki intent'ler admin kararıyla `CANCELLED` yapılabilir. Çiftçi ödediği sürece talep geçerliliğini korur. Bu karar Türkiye saha koşullarındaki kooperatif onay süreçleri ve hasat dönemine bağlı nakit döngüsü gözetilerek alınmıştır.
+
+---
+
+## 3. Müşteri Tahsilat Akışı
+
+### 3a. Tek Seferlik Analiz (Mission)
+
+1. Kullanıcı Mission talebi oluşturur → sistem `price_snapshot_id` üretir.
+2. Sistem bir `PaymentIntent` üretir (`PAYMENT_PENDING`) ve kullanıcıya yöntem seçtirir.
+3. **CREDIT_CARD:** Hosted checkout → provider webhook → `PAID` → Mission işlenebilir hale gelir → atama kuyruğuna girer.
+4. **IBAN_TRANSFER:** Uygulama IBAN bilgisi + Tarla ID talimatı gösterir → çiftçi havalede açıklamaya Tarla ID'sini yazar → dekontu uygulama üzerinden yükler → CENTRAL_ADMIN kontrol eder → `PAID` veya `REJECTED`.
+5. `PAID` olunca Mission atama kuyruğuna girer (PLANNED/ASSIGNED akışına uygun). Çiftçiye uygulama içi bildirim gönderilir.
+
+### 3b. Sezonluk Paket (Subscription)
+
+1. Kullanıcı aboneliği başlatır → Subscription `PENDING_PAYMENT` açılır, `price_snapshot_id` yazılır.
+2. Sistem Subscription hedefli bir `PaymentIntent` üretir (`PAYMENT_PENDING`).
+3. `PAID` olunca Subscription `ACTIVE` olur ve scheduler çalışır.
+4. Çiftçiye uygulama içi bildirim gönderilir; abonelik detay sayfasında "Aboneliğiniz aktif" durumu gösterilir.
+
+> **Sezonluk paket aktivasyon notu:** Subscription aktif başlangıç tarihi, ödeme onay tarihinden değil çiftçinin talep formunda belirttiği **sezon başlangıç tarihinden** itibaren hesaplanır. Bu, çiftçinin "ödedim ama sezon başlamadı" mağduriyetini önler.
+
+### 3c. IBAN Talimat Ekranı (PWA)
+
+- IBAN (kopyala butonu)
+- Alıcı adı
+- Tutar
+- **"Havale açıklamasına Tarla ID'nizi yazınız"** (Tarla ID, kopyala butonu)
+- **"Dekontu aşağıdan yükleyiniz"** (uygulama içi dosya yükleme)
+- Bilgi notu: "Ödemeniz Merkez Yönetim tarafından onaylandığında hesabınızda bildirim alacaksınız."
+
+---
+
+## 4. Veri Modeli (PostgreSQL)
+
+> Kanonik şema Contracts repo'dadır. Minimum gereksinim: `PaymentIntent` tablosunda `member_id`, `field_id` (opsiyonel, IBAN eşleştirme için), `receipt_blob_id`, `rejection_reason`, `admin_note` alanları bulunmalıdır.
+
+---
+
+## 5. API Endpoint'leri (Platform)
+
+### Farmer / Coop
+
+| Endpoint | Açıklama |
+|---|---|
+| `POST /payments/intents` | PaymentIntent oluştur (mission veya subscription için) |
+| `GET /payments/intents/{id}` | Durum görüntüle |
+| `GET /payments/intents/{id}/instructions` | IBAN talimatı / provider checkout bilgisi |
+| `POST /payments/intents/{id}/upload-receipt` | Dekont yükle (blob referansı döner) |
+| `POST /payments/intents/{id}/cancel` | PAYMENT_PENDING iken iptal |
+
+### Provider Callback
+
+| Endpoint | Açıklama |
+|---|---|
+| `POST /payments/webhook/{provider}` | Ödeme sağlayıcı callback/webhook |
+
+### Admin (CENTRAL_ADMIN)
+
+| Endpoint | Açıklama |
+|---|---|
+| `GET /admin/payments/intents?status=PAYMENT_PENDING` | Bekleyen tahsilatlar |
+| `GET /admin/payments/intents?field_id={id}` | Tarla ID'ye göre ara |
+| `POST /admin/payments/intents/{id}/mark-paid` | Manuel onay (`admin_note` zorunlu) |
+| `POST /admin/payments/intents/{id}/reject` | Manuel red (`rejection_reason` zorunlu) |
+| `POST /admin/payments/intents/{id}/refund` | İade (PAID → REFUNDED) |
+
+> **Admin eşleştirme akışı:** CENTRAL_ADMIN, gelen dekonttaki Tarla ID'yi admin paneline girer → sistem ilgili `PaymentIntent`'i otomatik listeler → admin dekontu karşılaştırır → `mark-paid` veya `reject`.
+
+---
+
+## 6. Kullanıcı Bildirim Politikası
+
+Ödeme durumuna göre **uygulama içi bildirim** + **SMS** gönderilir:
+
+| Durum | Bildirim |
+|---|---|
+| `PAYMENT_PENDING` | "Ödeme bekleniyor. Üyelik numaranızı havale açıklamasına yazmayı ve dekontu uygulamadan yüklemeyi unutmayın." |
+| `PAID` | "Ödemeniz onaylandı. Talebiniz işleme alındı." *(Kullanıcı kendi sayfasında PAID durumunu ve onay tarihini görür.)* |
+| `REJECTED` | "Ödemeniz reddedildi. Gerekçe: {rejection_reason}. Lütfen tekrar yükleyin veya destek ile iletişime geçin." |
+| `CANCELLED` | "Talebiniz iptal edildi." |
+| `REFUNDED` | "Ödemeniz iade edildi." |
+
+---
+
+## 7. İptal / İade Politikası
+
+- **İptal (CANCELLED):** Yalnızca `PAYMENT_PENDING` iken kullanıcı veya admin tarafından yapılır.
+- **İade (REFUNDED):** Yalnızca `PAID` iken CENTRAL_ADMIN aksiyonu ile yapılır.
+- **İade + Mission:** Mission henüz `FLOWN` aşamasına gelmemişse `CANCELLED` yapılabilir. `FLOWN/UPLOADED/ANALYZING/DONE` sonrası iade kararı ticari politikaya bağlıdır; sistem durumu `REFUNDED` olarak kaydeder, fiili para iadesi ayrı gateway işlemidir.
+- **İade + Subscription:** `ACTIVE` Subscription iade edilirse Subscription `CANCELLED` olur; yeni Mission üretilmez. Mevcut Missionlar ayrıca değerlendirilir.
+- **Kısmi iade (Subscription):** Kullanılmayan Mission sayısına göre hesaplanan kısmi iade politikası `PackageTier` tanımına bağlıdır. (Ayrıca tanımlanacak — Contracts repo.)
+
+---
+
+## 8. Audit Log (WORM) — Minimum Olaylar
+
+Tüm olaylar BÖLÜM 3 log standardına uygun JSONL formatında üretilir. `correlation_id` zorunludur. PII bulunmaz.
+
+| Olay | Tetikleyici |
+|---|---|
+| `PAYMENT.INTENT_CREATED` | Intent açılışı |
+| `PAYMENT.MARK_PAID` | Admin manuel onayı |
+| `PAYMENT.WEBHOOK_PAID` | Provider webhook onayı |
+| `PAYMENT.REJECTED` | Admin red aksiyonu |
+| `PAYMENT.CANCELLED` | Kullanıcı veya admin iptali |
+| `PAYMENT.REFUNDED` | Admin iade aksiyonu |
+
+> `PAYMENT.MARK_PAID` ve `PAYMENT.REJECTED` olaylarında `admin_user_id` ve `admin_note` / `rejection_reason` alanları zorunludur.
+
+---
+
+## 9. PaymentStateMachine Servisi
+
+Tüm durum geçişleri merkezi `PaymentStateMachine` servisi üzerinden yapılır. Hiçbir servis bu servisi bypass ederek doğrudan durum güncelleyemez. Yasadışı geçiş denemeleri `HTTP 4xx` yerine `PaymentTransitionError` domain hatası döner ve audit log'a yazılır.
+
+---
+
+## 10. Operasyonel Politikalar (BILLING_ADMIN)
+
+**IBAN Onay SLA:**
+Çiftçi dekontu uygulama üzerinden yükledikten sonra **bir sonraki iş günü 17:00'e kadar (T+1)** BILLING_ADMIN tarafından onaylanmalıdır. SLA ihlalinde sistem CENTRAL_ADMIN'e otomatik uyarı gönderir. Uyarı `PAYMENT.SLA_BREACH` olayı olarak audit log'a yazılır.
+
+**Şüpheli Makbuz:**
+BILLING_ADMIN şüpheli bir makbuz tespit ettiğinde **tek başına karar veremez**. CENTRAL_ADMIN'e eskalasyon zorunludur. Eskalasyon kararı `PAYMENT.ESCALATED` olayı olarak audit log'a gerekçesiyle birlikte yazılır.
+
+**Geri Ödeme Limit Politikası:**
+- **500 TL ve altı:** BILLING_ADMIN tek imzayla onaylayabilir.
+- **500 TL üstü:** CENTRAL_ADMIN ikinci onayı zorunludur.
+- Eşik değeri (`refund_approval_threshold_tl`) Contracts repo'da konfigüre edilir; değişiklik CENTRAL_ADMIN yetkisindedir ve audit log'a yazılır.
+
+**İl Operatör Kar Payı:**
+Hesaplama ve ödeme mekanizması için bkz. **[KR-083]**.
+
+## [KR-040] Güvenlik Kabul Kriterleri/Test Checklist (SDLC Entegrasyonu)
+
+**Amaç:** TXT repo mantalitesindeki savunma-derinliği (defense-in-depth) güvenlik yaklaşımını, ölçülebilir kabul kriterlerine ve SDLC kapılarına (PR/CI/Release/Ops) bağlamak.
+
+**Yer:** İş Planı seviyesinde politika ve denetim beklentileri. Bu ek, ürün ve saha dokümanları için bağlayıcı kabul kriteridir.
+
+---
+
+## [KR-041] SDLC Kapıları (Gate) - Zorunlu Kontroller
+
+### PR Gate (merge öncesi)
+- Contracts pinleme: CONTRACTS_VERSION (SemVer) + CONTRACTS_SHA256 zorunlu; değişiklikte breaking-change kontrolü
+- Unit test: kritik güvenlik fonksiyonları (hash, imza doğrulama, allowlist, RBAC) %80+ satır kapsama hedefi
+- Secret scan: repo içinde anahtar/sertifika/PIN bulunmayacak (pre-commit + CI)
+- Lint/Type-check: statik analiz hatasız; şema validasyonu (OpenAPI/JSON Schema) çalışır
+
+### CI Gate (pipeline)
+- Integration test: EdgeKiosk → Backend mTLS el sıkışması + cihaz kimliği doğrulama
+- Contract test: DTO/Schema üretimi + geriye dönük uyumluluk (backward-compatible) kontrolü
+- SAST/Dependency scan: bilinen kritik zafiyet yok (CVSS yüksek olanlar blok)
+- Container scan + SBOM: imaj taraması temiz; SBOM üretilir ve arşivlenir
+
+### Release Gate (prod'a çıkış)
+- Sürümleme: release notları + migration planı; breaking change varsa sürüm artışı ve geriye uyumluluk stratejisi
+- Smoke test: uçtan uca örnek akış (Mission create → ingest → worker → sonuç → harita katmanı) başarılı
+- Sertifika yönetimi: kiosk sertifikaları basılı/dağıtılmış; rotasyon takvimi kayıtlı
+- Rollback planı: veri bütünlüğünü bozmadan geri dönüş adımları tanımlı
+
+### Ops Checklist (günlük/haftalık)
+- Karantina kuyruğu: bekleyen dosya/mission sayısı ve sebepleri raporlanır
+- Audit/WORM log doğrulaması: logların değişmediği kontrol edilir, saklama süresi politikası izlenir
+- Anahtar/sertifika rotasyonu: süre dolumu yaklaşanlar listelenir, planlı yenileme yapılır
+- Anomali izleme: olağandışı ingest hızı, tekrar eden başarısız doğrulama, şüpheli IP/cihaz hareketleri alarm üretir
+
+---
+
+## [KR-042] Kabul Kriterleri Matrisi
+
+| Güvenlik Katmanı | Kabul Kriteri (DoD) | Test Kanıtı | SDLC Gate |
+|------------------|---------------------|-------------|-----------|
+| Kimlik & Yetki (RBAC) + PII ayrımı | İl Operatörü ve saha rolleri PII görmez; sadece FieldID/özet KPI görür. Admin işlemleri audit log üretir. | RBAC unit + API yetki e2e; negatif test: yetkisiz erişim 403. Audit log kaydı doğrulanır. | PR + CI |
+| Cihaz kimliği + mTLS | Sadece kayıtlı kiosk cihazı, sertifikalı mTLS ile ingest endpoint'ine erişebilir; sertifika iptali anında bloklar. | Integration test: mTLS başarılı/başarısız senaryolar; sertifika revocation testi. | CI + Release |
+| Veri bütünlüğü: SHA-256 manifest + imza | Her ingest paketi için manifest (dosya listesi + hash) ve imza zorunlu; hash uyuşmazsa karantina. | Unit test (hash/manifest), e2e: bozuk dosya → karantina + alarm. | PR + CI |
+| Allowlist / içerik doğrulama | Sadece izinli uzantı/MIME; maksimum boyut/çözünürlük limitleri; zip-slip ve path traversal engelli. | Unit test: uzantı/MIME; fuzz test örnekleri; e2e negatif senaryo. | PR + CI |
+| Zararlı taraması (AV/EDR) + karantina | AV taraması geçmeden hiçbir dosya iş akışına giremez; şüpheli içerik karantinaya alınır, etiketlenir. | E2e senaryo: EICAR test dosyası → karantina + olay kaydı. | CI + Ops |
+| M1 İşleme İstasyonu (air-gapped) + M2 Gönderim İstasyonu + tek yönlü aktarım | M1 internetsiz (sadece Pix4D lisans allowlist); M2 sadece outbound mTLS; makineler arası fiziksel medya + STATION_OPERATOR; çıktı sadece imzalı paket olarak ilerler. | SOP denetim checklisti + örnek denetim kaydı. | Release + Ops |
+| Zincir-of-custody + immutable (WORM) audit | MissionID/BatchID/CardID ve işlem adımları değiştirilemez logda; log saklama süresi uygulanır. | Log bütünlüğü kontrolü + denetim raporu; e2e: ingest adımı log zinciri. | CI + Ops |
+| Secrets yönetimi (rotasyon) | Hiçbir secret repo'da yok; vault/secret store; rotasyon periyodu tanımlı; sızma halinde iptal prosedürü. | Secret scan raporu + rotasyon kaydı + revocation drill çıktısı. | PR + Release + Ops |
+| Rate limiting + anomali tespiti | Ingest ve auth endpoint'lerinde rate limit; tekrar eden başarısız doğrulama alarmları. | Load test + saldırı simülasyonu (çoklu deneme) → 429 ve alarm. | CI + Ops |
+| AI izolasyonu + least privilege | Worker sadece job kuyruğu/sonuç yazma yetkisine sahip; ham PII yok; ağ erişimi minimum. | IAM policy testi + container/network policy doğrulama; e2e job akışı. | CI + Release |
+
+---
+
+## [KR-043] Test Checklist (Senaryo Bazlı)
+
+| Senaryo | Adımlar (özet) | Beklenen Sonuç | Kanıt/Artefakt |
+|---------|----------------|----------------|----------------|
+| SC-01: Normal ingest (offline → senkron) | Pilot görev dosyası → uçuş → SD ingest → manifest doğrula → AV tarama → upload/queue → worker sonuç → harita katmanı | Tüm adımlar başarılı; sonuç katmanı oluşur; audit zinciri tam | E2E test raporu + log zinciri + sonuç ekran görüntüsü |
+| SC-02: Hash uyuşmazlığı | Manifestteki bir dosyayı değiştir → ingest | Karantina; olay kaydı; işleme alınmaz | Karantina kaydı + alarm kaydı |
+| SC-03: Yetkisiz cihaz | mTLS sertifikası olmayan cihazla ingest dene | Erişim reddi; audit log + alarm | Integration test çıktısı + log |
+| SC-04: EICAR/zararlı içerik | Test imzası bulunan dosyayı ingest et | AV blok + karantina | AV raporu + karantina kaydı |
+| SC-05: PII sızma testi | İl Operatörü rolüyle PII endpoint'ine erişmeyi dene | 403; veri dönmez; deneme audit log'a düşer | RBAC e2e raporu |
+| SC-06: Contract breaking change | Schema'da alan sil/isim değiştir | CI breaking-change detector fail; merge/release blok | CI artefaktı + diff raporu |
+
+---
+
+## [KR-050] Kimlik Doğrulama ve Üyelik Akışı (Sade Model)
+
+- Kimlik bilgisi olarak yalnızca **Telefon Numarası** kullanılır (E-posta ve TCKN **toplanmaz**)
+- **Kayıt:** Telefon Numarası girilir ve 6 haneli sayısal PIN belirlenir
+- **Giriş:** Telefon Numarası + 6 haneli PIN ile yapılır
+- **Doğrulama adımı yoktur**; süreç bilinçli olarak sadeleştirilmiştir
+- Tek satırlık “SMS OTP / tek kullanımlık kod yoktur
+- **PIN unutulursa:** Merkez/Kooperatif/İl Operatörü panelinden PIN sıfırlanır; kullanıcı ilk girişte yeni PIN belirler
+- Kullanıcıyı yormayan minimum korumalar: giriş deneme sınırı (rate limit) ve kısa süreli kilitleme (lockout)
+
+---
+
+## [KR-060] Ürün/Teknik Spesifikasyondan Normatif
+
+## [KR-061] Amaç ve Sabit Çerçeve
+
+Bu bölüm, **[KR-001] Proje Özeti** içindeki "Sabit Çerçeve" maddelerinin **normatif özeti/aynısıdır**.
+
+- Kanonik kaynak: **[KR-001]**
+- Bu bölümde tekrar eden maddeler kaldırıldı (kural değişmedi).
+
+---
+
+## [KR-062] Tasarım İlkeleri
+
+1. **Tek kaynak gerçek:** API ve veri modeli. Web (PWA) iş kuralı kopyalamaz.
+2. **Offline-first:** Yerel istasyon internetsiz çalışabilir; senkronizasyon opsiyonel ve güvenli.
+3. **Denetlenebilirlik (Audit Log):** Fiyat, kurum onayı, eşleştirme ve hakediş adımlarında zorunlu log.
+4. **Eşleştirme hiyerarşisi:** MissionID → BatchID → FieldID → CropSeason. MissionID yoksa coğrafi kesişim + manuel kuyruk.
+
+---
+
+## [KR-063] Roller ve Yetkiler (RBAC)
+
+| Rol Kodu | Kısa Tanım | Özet Yetki |
+|----------|------------|------------|
+| FARMER_SINGLE | Tekil çiftçi | Tarla ekle, analiz talebi aç, rapor görüntüle |
+| FARMER_MEMBER | Kurum üyesi çiftçi | Kendi tarlaları için rapor gör, kurum bağlantısını onayla |
+| COOP_OWNER | Kooperatif sahibi/yetkili | Paket satın alma, kullanıcı yönetimi, analiz talebi, dashboard |
+| COOP_ADMIN | Kooperatif admin | Üye yönetimi, tarla ekleme, analiz talebi |
+| COOP_AGRONOMIST | Kooperatif agronomist | Rapor gör, not gir (aksiyon kararı yok) |
+| COOP_VIEWER | Kooperatif izleyici | Sadece özet/rapor |
+| PILOT | Drone pilotu | Görev gör, uçuş yap, veri teslim et, hakediş önizle |
+| STATION_OPERATOR | Yerel istasyon operatörü | Kiosk ingest, eşleştirme, karantina/antivirüs sonuçları |
+| IL_OPERATOR | İl Operatörü | PII görmeden KPI/özet gelir ve operasyon metrikleri |
+| CENTRAL_ADMIN | Merkez yönetici | Fiyat/PriceBook, kurum onayı, rol atama, audit |
+| AI_SERVICE | YZ analiz servisi | Job tüket, rapor üret, sonuç yaz |
+| EXPERT | Uzman | İnceleme görüntüle, verdict ver, PII görmez |
+
+---
+
+## [KR-064] Harita Katman Standardı (Layer Registry)
+
+Katmanlar web (PWA) arayüzünde aynı Layer Registry üzerinden tanımlanır. Renk + desen/ikon + opaklık + öncelik tutarlı olmalıdır.
+
+| LayerCode | Legend | Renk | Desen/İkon | Opaklık | Öncelik | Çıktı Tipi |
+|-----------|--------|------|------------|---------|---------|------------|
+| HEALTH | Sağlık | Yeşil | Leaf ikon + gradient heatmap | 0.55 | 10 | Raster/Heatmap |
+| WEED | Yabancı ot | Sarı/Hardal | Noktalı desen + weed ikon | 0.60 | 60 | Polygon/Zone |
+| DISEASE | Hastalık | Turuncu | Çapraz çizgi + stethoscope ikon | 0.65 | 70 | Polygon/Zone |
+| PEST | Zararlı böcek | Kırmızı | X/desen + bug ikon | 0.70 | 80 | Polygon/Zone |
+| FUNGUS | Mantar | Mor | Çapraz tarama + mushroom ikon | 0.65 | 75 | Polygon/Zone |
+| WATER_STRESS | Su stresi | Mavi | Damla noktalı desen + droplet ikon | 0.45 | 50 | Raster/Zone |
+| N_STRESS | Azot stresi | Soluk gri | Çapraz çizgili desen + N ikon | 0.45 | 40 | Raster/Zone |
+| THERMAL_STRESS | Termal stres (KR-084) | Koyu Kırmızı/Turuncu | Isı haritası gradient + termometre ikon | 0.55 | 55 | Raster/Heatmap |
+
+**Çakışma kuralı:** priority yüksek katman üstte görünür. **Erişilebilirlik için ikon + desen zorunludur.**
+
+> **Not:** THERMAL_STRESS katmanı yalnızca termal bant mevcut olduğunda üretilir (bkz. KR-084). Termal bant yoksa bu katman raporda yer almaz.
+
+---
+
+## [KR-065] Pilot Hakediş Doğrulama (Expected vs Observed)
+
+- **Expected Area:** FieldBoundary veya Mission flightplan sınırı (m²)
+- **Observed Area:** GeoTIFF/ortomozaik kapsama-izi (kapsama) poligonu (m²)
+
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+**Hakediş kuralı:**
+- `coverage_ratio >= 0.95` → TAM ödeme
+- `0.80 <= coverage_ratio < 0.95` → KISMİ + opsiyonel inceleme
+- `coverage_ratio < 0.80` → TEKRAR UÇUŞ veya itiraz/inceleme
+
+---
+
+## [KR-066] Güvenlik ve KVKK
+
+- PII ayrı veri alanında tutulur; raporlama ve KPI katmanı pseudonymous kimliklerle çalışır
+- İl operatörü: ilçe veya 1-2 km grid yoğunluk; isim/telefon/IBAN alanlarına **erişemez**
+- Yerel istasyon: offline karantina, hash doğrulama, antivirüs raporu ve zincir log (chain-of-custody)
+- Drone seri no ve kart kimliği doğrulama sahte veri enjeksiyon riskini azaltır
+- Fiyat ve kurum onayı değişiklikleri audit log zorunlu; snapshot ile geçmiş siparişler etkilenmez
+
+---
+
+## [KR-070] YZ Analiz İzolasyonu (Worker Isolation & Egress Policy)
+
+**Amaç:** YZ (Worker) altyapısının web/platform tarafından “sorgulanabilir bir servis” gibi kullanılmasını engellemek; model/ham veri yüzeyini küçültmek; sahada ve merkezde güvenliği “varsayılan reddet” (deny-by-default) ile sabitlemek.
+
+### Zorunlu Kurallar (Hard)
+1) **Inbound kapalı:** Worker hiçbir koşulda “ingest/upload” HTTP endpoint’i barındırmaz; dışarıdan bağlantı kabul etmez. Job alma yalnızca **dispatch/queue + pull/poll** ile olur.  
+2) **Egress allowlist:** Worker yalnızca izinli hedeflere **outbound** bağlanabilir; internet geneli kapalıdır.  
+   - Object Storage (S3-uyumlu: MinIO/Ceph vb.) → **read-only** (Worker rolü)  
+   - Dispatch/Queue → **consume-only** (Worker rolü)  
+   - Observability (log/metric/tracing) → **append-only**  
+3) **Ağ segmentasyonu:** Web (PWA) ve public backend, Worker ağına **doğrudan erişemez**. Platform bile Worker’a “push” bağlantısı açamaz (platform→worker deny).  
+4) **Kimlik & şifreleme:** Worker’ın izinli hedeflere erişimi **mTLS (karşılıklı TLS)** + servis kimliği ile yapılır; erişimler kısa ömürlü yetki (token/STS) ile sınırlanır.  
+5) **Hard gate koşulları:** Worker job çalıştırmadan önce şunları doğrular:  
+   - `requires_calibrated=true` ve kalibrasyon kanıtı **[KR-018 / KR-082]**  
+   - `available_bands[]` doğrulaması + `drone_capability_matrix` çapraz kontrolü **[KR-018 / KR-082]**
+   - dataset kanıt zinciri: manifest + hash + (varsa) signature + AV raporları (**[KR-072]**, **[KR-073]**)  
+6) **Operasyonel erişim:** Yönetim erişimi yalnızca bastion/jump host + MFA + JIT (Just‑In‑Time: kısa süreli erişim) ile; yönetim portları public internete açılmaz.
+
+### Kanonik Ağ Politikası Matrisi (Policy Matrix)
+- Platform → Worker: **DENY** (TCP/HTTP yok)  
+- Web/PWA → Worker: **DENY**  
+- Worker → Object Storage: **ALLOW (outbound only, allowlist, read-only)**  
+- Worker → Queue: **ALLOW (outbound only, consume-only)**  
+- Worker → Platform Results API: **ALLOW (outbound only, mTLS)**  
+- Worker → Internet: **DENY (default)**
+
+### Log / Audit Kanıtı (WORM)
+- `SECURITY.DENY` (policy deny / mTLS_fail / allowlist_fail / signature_fail)  
+- `JOB.REJECT` (precondition fail)  
+- `DATASET.REJECTED_QUARANTINE` (hash mismatch / malware / QC fail)  
+Tüm olaylar correlation_id ile zincirlenir; WORM/immutable log (silinemez) varsayılır.
+
+### SDLC Kabul Kriterleri (Test)
+- **Net test:** Platform’dan Worker subnet’e TCP denemesi → **başarısız**  
+- **E2E test:** “calibrated yok” dataset ile job → Worker **reddeder**  
+- **E2E test:** manifest hash mismatch → dataset **quarantine**  
+- **CI gate:** contracts/examples validate, breaking-change detector → **geçmeden merge yok**
+
+**İlgili maddeler:** [KR-066], [KR-017], [KR-018], [KR-040–043], [KR-072], [KR-073], EK-SOP-SEC, BÖLÜM 3, BÖLÜM 4
+---
+
+## [KR-071] Tek Yönlü Veri Akışı (One-way data flow) + Allowlist Yerleşimi
+
+**Amaç:** Ham verinin (RAW/CALIBRATED) web/public platform katmanına çıkmasını engellemek; Worker’a inbound kapı açmadan veri akışını tek yönlü sabitlemek; allowlist’i yanlış yere koyup “güvenlik yanılsaması” üretmemek.
+
+### Kanonik Akış (Zorunlu)
+1) **EdgeKiosk → Platform/Ingress:** HTTPS 443 üzerinden, **mTLS cihaz kimliği (client cert)** ile.  
+   - IP allowlist sadece **Ingress kapısında** (WAF/API Gateway/Reverse Proxy) **ikincil katman** olarak uygulanır.  
+2) **Platform → Object Storage + Queue:** Platform hamı public API’de servis etmez; ham veri storage’da saklanır, iş job/queue ile orkestre edilir.  
+3) **Worker → (pull) Queue/Storage:** Worker işi kuyruktan alır; dataset’i storage’dan okur; analiz eder.  
+4) **Worker → Platform (sonuç):** Worker yalnızca **türev sonuç** (AnalysisResult / layer outputs) yazar; ham veri geri dönmez.  
+5) **Web/PWA → Platform:** Web sadece sonuç okur; ham veri yok.
+
+### Allowlist Yerleşimi (Gerçek Dünya Gerekçesi)
+- IP allowlist **kimlik değildir**: saha şartlarında dinamik IP, CGNAT, operatör NAT, modem değişimi, farklı uplink’ler yaygındır.  
+- Bu nedenle allowlist “kimlik doğrulama” yerine geçemez; **mTLS cihaz kimliği** ana kontroldür.  
+- Allowlist yalnızca “giriş yüzeyini daraltma” (attack surface reduction) amaçlıdır.
+
+### Cihaz Kimliği ve Sertifika Yönetimi (mTLS)
+- EdgeKiosk cihazları kayıt altındadır: `station_id`, `device_id`, sertifika seri no, iptal/rotasyon prosedürü.  
+- Sertifika iptali (revocation) ve yenileme (rotation) saha operasyon SOP’sinde zorunludur.
+
+### SDLC Kabul Kriterleri
+- Allowlist dışı IP → ingress **deny + audit**  
+- Sertifikasız/yanlış sertifikalı istek → **deny + audit**  
+- Worker’a doğrudan HTTP çağrısı denemesi → **deny (policy)**
+
+**İlgili maddeler:** [KR-017], [KR-070], [KR-072], [KR-073], EK-SOP-SEC
+---
+
+## [KR-072] Dataset Lifecycle (Veri Yaşam Döngüsü) + Kanıt Zinciri (Chain of Custody) — Contract-First
+
+**Amaç:** “Veri akışı sözleşmesiz” kalmasın; saha/merkez arasında tamper (kurcalama) ve malware (zararlı) tartışmaları teknik kanıtla çözülsün; Worker yalnızca kanıtlı ve kalibre edilmiş dataset’lerle çalışsın.
+
+### Dataset = Birinci Sınıf Domain Nesnesi
+Ham görüntü bir “dosya yığını” değil, sistemde **Dataset**’tir. Dataset bir durum makinesidir ve geçişler event/audit ile ispatlanır.
+
+**Kanonik durumlar (minimum):**
+- `RAW_INGESTED` (ham alındı, karantina)
+- `RAW_SCANNED_EDGE_OK` (AV1 geçti)
+- `RAW_HASH_SEALED` (manifest + hash mühürlendi)
+- `CALIBRATED` (**[KR-018] hard gate**)
+- `CALIBRATED_SCANNED_CENTER_OK` (AV2 + verification OK)
+- `DISPATCHED_TO_WORKER`
+- `ANALYZED`
+- `DERIVED_PUBLISHED` (platforma sadece türev/sonuç)
+- `ARCHIVED` (soğuk depolama)
+- Hata/şüphe: `REJECTED_QUARANTINE`
+
+### Kanıt Zinciri (Zorunlu Artefact’ler)
+Her Dataset için aşağıdaki artefact’ler üretilecek ve ilişkilendirilecek:
+- `dataset_manifest.json` (dosya listesi, boyut, zaman, drone_id, flight_id, mission_id, station_id)  
+- `manifest.sha256` (manifest hash’i)  
+- `signature.sig` (opsiyonel ama önerilen: cihaz anahtarıyla imza)  
+- `scan_report_edge.json` (AV1)  
+- `scan_report_center.json` (AV2)  
+- `verification_report.json` (manifest’teki hash’ler ile merkezin hesapladığı hash’ler karşılaştırması)  
+- `calibration_result.json` + `qc_report.json` (kalibrasyon + kalite kanıtı)
+
+**Kurcalama ispatı (tamper proof):** Edge manifest’i ile merkezde hesaplanan hash’ler uyuşmazsa → `REJECTED_QUARANTINE` + kanıt.
+
+### Transfer Batch (Saha Gerçeği)
+Bağlantı zayıf/kesintili olabileceği için transfer **chunk/resumable** (parça/parça devam edebilir) tasarlanır. `transfer_batch` ile:
+- hangi parçalar gitti/kaldi,
+- hash doğrulama,
+- tekrar deneme (retry),
+- kesintiden devam (resume)
+kanıtlanır.
+
+### Contract-First Zorunluluğu
+Bu bölüm “doküman” değil, **contracts**’ta JSON Schema’dır (bkz. `tarlaanaliz-contracts`).  
+`Dataset`, `DatasetManifest`, `ScanReport`, `VerificationReport`, `CalibrationResult`, `QCReport`, `TransferBatch` şemaları kanoniktir (**[KR-081]**).
+
+### SDLC Kabul Kriterleri
+- Hash mismatch senaryosu otomatik test: “1 byte değiştir” → merkez verification **FAIL**  
+- “calibrated yok” → job yaratma/çalıştırma **REJECT**  
+- Contracts CI: örnek JSON’lar şemaya uymazsa **merge yok**
+
+**İlgili maddeler:** [KR-018], [KR-070], [KR-071], [KR-073], [KR-081]
+---
+
+## ADR-001: Dataset State Machine — 9 Durumlu Makine Kararı
+
+**Tarih:** 2026-03-02  
+**Karar Sahibi:** Zana (CENTRAL_ADMIN)  
+**Durum:** KABUL EDİLDİ
+
+**Bağlam:** Dış mimari inceleme (Şüpheci Kıdemli Mimar Analizi), operasyon ve test maliyetini düşürmek gerekçesiyle 5 durumlu state machine'e geçişi önerdi.
+
+**Değerlendirilen Seçenekler:**
+- **Seçenek A — 5 Durum:** `RAW → CALIBRATED → ANALYZED → PUBLISHED → ARCHIVED`
+- **Seçenek B — 9 Durum:** Mevcut (bkz. [KR-072])
+
+**Karar: 9 Durum korunur.**
+
+**Gerekçe:**
+1. **AV tarama katmanları ayrıdır:** AV1 (EdgeKiosk) ve AV2 (Merkez) farklı güvenlik işlevleri görür. `RAW_SCANNED_EDGE_OK` ve `CALIBRATED_SCANNED_CENTER_OK` durumları birleştirilirse hangi taramanın hangi aşamada yapıldığı denetim izinde kaybolur.
+2. **KVKK denetim izi:** Olası bir anlaşmazlıkta "bu veri seti tam olarak ne zaman kalibre edildi, kim onayladı, hash'i neydi?" soruları her ara durumun ayrı logu gerektirmektedir.
+3. **Migration maliyeti:** MVP'de 5 durumla başlanıp v1.1'de 9 duruma geçiş, tüm mevcut kayıtların geriye dönük durum eşlemesini ve migration testini gerektirir. Baştan doğru yapmak daha ucuzdur.
+
+**Sonuçlar:**
+- 5 durumlu makineye geçiş teklifi v2.0'a kadar gündeme alınmaz.
+- Mevcut 9 durum ve `REJECTED_QUARANTINE` hata durumu değişmez.
+- Test kombinasyonu patlaması endişesi için çözüm: her durum geçişi için ayrı birim testi, entegrasyon testlerinde yalnızca kritik yollar.
+
+
+---
+
+## ADR-002: Spektral Bant Genişletme — Graceful Degradation Modeli (v1.2.0)
+
+**Tarih:** 2026-03-03  
+**Karar Sahibi:** Zana (CENTRAL_ADMIN)  
+**Durum:** KABUL EDİLDİ
+
+**Bağlam:** DJI Mavic 3M tedarik sıkıntıları aşılamaz görünmektedir. Sistem halihazırda drone-agnostic mimaridedir ve 5 bantlı sensörler (MicaSense RedEdge-P, Sentera 6X, Altum-PT) desteklenmektedir. Soru şudur: canlıya çıkmadan önce 5 bant + termal desteği sisteme entegre edilmeli midir?
+
+**Değerlendirilen Seçenekler:**
+- **Seçenek A — Sabit 4 bant:** Mevcut haliyle canlıya çık; 5 bant desteğini sonraya bırak.
+- **Seçenek B — Graceful degradation (dinamik bant algılama):** "5 bant + termal varsa kullan, yoksa 4 bant spektral kullan" modeli ile canlıya çık.
+
+**Karar: Seçenek B — Graceful Degradation Modeli.**
+
+**Gerekçe:**
+1. **Sonradan ekleme = breaking change:** MVP'den sonra bant genişletme, intake_manifest şemasını, worker pipeline'ını ve rapor formatını etkiler; bu v2.0 major bump gerektirir. Baştan esnek tasarlamak migration maliyetini sıfıra indirir.
+2. **DJI risk planı (KR-034) somut hale geldi:** M3M tedarik sorunu nedeniyle 5 bantlı sensöre geçiş ihtimali yüksektir; sistem hazır olmalıdır.
+3. **Analiz kalitesi artışı:** EVI, chlorophyll-a, CWSI gibi indeksler tarım uygulamalarında önemli katma değer sağlar.
+4. **Maliyet-fayda dengesi:** Graceful degradation modeli hem 4 bantlı hem 5 bantlı verileri aynı pipeline'da işler; ekstra geliştirme maliyeti düşüktür.
+
+**KR Güncelleme Stratejisi — Mevcut KR Güncelleme (Yeni KR Açmama):**
+Bant genişletme, mevcut KR'lerin doğal kapsamı içindedir:
+- KR-015 → bant kapasitesi matrisi referansı eklendi
+- KR-018/KR-082 → spektral kapasite algılama ve graceful degradation kuralları eklendi
+- KR-030 → "min 4 bant zorunlu, 5+ opsiyonel" politikası eklendi
+- KR-034 → statü "risk planı"ndan "aktif operasyon planı"na çevrildi
+- KR-064 → THERMAL_STRESS katmanı eklendi
+
+**İstisna — Yeni KR-084 (Termal Pipeline):**
+Termal veri işleme farklı bir fiziksel ölçüm tipidir (radyometrik sıcaklık, reflektans değil). İşleme pipeline'ı, validasyon kuralları ve çıktı formatı MS bantlardan temelden farklıdır. Bu nedenle termal pipeline için ayrı bir KR (KR-084) oluşturulmuştur.
+
+**Sonuçlar:**
+- SSOT v1.1.0 → v1.2.0 minor bump (non-breaking: yeni opsiyonel alanlar ve pipeline yolları eklenir; mevcut 4 bantlı akış değişmez).
+- `intake_manifest` şemasına `available_bands[]` zorunlu alanı eklenir.
+- `drone_capability_matrix.yaml` yeni Contracts artefaktı olarak oluşturulur.
+- Worker pipeline capability detection mantığı implemente edilir.
+- Rapor çıktısı katmanlı hale gelir (Temel / Genişletilmiş / Kapsamlı).
+
+
+
+## [KR-073] Untrusted File Handling + Malware (AV1/AV2) + Güvenli Dönüştürme
+
+**Amaç:** Ham görüntü dosyalarının (TIFF/JPEG/RAW vb.) saldırı yüzeyi olmasını engellemek; iki aşamalı tarama ve güvenli dönüştürme ile hem yereli korumak hem de "hile yapıldı mı?" sorusuna kanıt üretmek.
+
+### Untrusted Input Prensibi
+- Ham dosyalar **her zaman untrusted** kabul edilir.  
+- Parse/convert işlemleri izole sandbox içinde yapılır; worker ve platform public katmanları hamı servis etmez.  
+- "Güvenli türev" (tiles/thumbnails/COG) üretimi merkezde, ayrı sandbox işçisinde yapılır.
+
+### İki Aşamalı Malware Taraması (Zorunlu)
+- **AV1 (EdgeKiosk):** Yerel istasyonu korur; bariz zararlıyı erken yakalar. Çıktı: `scan_report_edge.json`.  
+- **AV2 (Merkez Security Gateway / Ingestion):** İkinci kontrol + kurcalama ispatı zincirinin parçası. Çıktı: `scan_report_center.json`.  
+- **Verification:** AV2 aşamasında ayrıca hash doğrulaması yapılır (`verification_report.json`) (**[KR-072]**).
+
+### Tarama Modu Politikası (SMART / BYPASS)
+
+> ⚠️ **Temel Prensip:** AV taraması varsayılan olarak zorunludur. BYPASS modu bu kuralın istisnasıdır; yalnızca CENTRAL_ADMIN tarafından **coğrafi (il bazında) ve zamansal (tarih/saat aralığı)** olarak sınırlandırılmış biçimde etkinleştirilebilir. Kapsam dışındaki iller ve zaman dilimleri her koşulda SMART modda çalışmaya devam eder.
+
+**MOD 1 — SMART (varsayılan):**
+
+Normal operasyonda aktif olan moddur. Dosyalar quarantine-bucket'a ulaştığında sistem önce hafif doğrulama yapar. Tam AV taraması yalnızca aşağıdaki tetikleyici koşullardan biri varsa çalışır:
+- Dosya boyutu manifest'teki beklenen değerden ±%20 sapıyorsa
+- Dosya uzantısı izin verilen whitelist dışındaysa
+- SHA-256 hash manifest ile uyuşmuyorsa
+- `drone_id` sistem tarafından ilk kez görülüyorsa
+- EdgeKiosk yazılım sürümü minimum sürümün altındaysa
+
+Bu koşulların hiçbiri yoksa dosya yalnızca hash doğrulama + dosya tipi kontrolünden geçer.
+
+**MOD 2 — BYPASS (CENTRAL_ADMIN yetkili, coğrafi + zamansal sınırlı):**
+
+AV taraması devre dışıdır; yalnızca SHA-256 hash doğrulama ve dosya tipi kontrolü yapılır. Bu mod yalnızca belirlenmiş il(ler) ve zaman aralığında geçici olarak kullanılır.
+
+[ZORUNLU] BYPASS etkinleştirme koşulları:
+- Yalnızca CENTRAL_ADMIN etkinleştirebilir.
+- Kapsam tanımı zorunludur: `province_codes` (il listesi) + `active_from` + `active_until` (ISO 8601).
+- Başlangıç kapsamı: Diyarbakır ve CENTRAL_ADMIN'in belirlediği iller.
+- Etkinleştirme anında `SCAN_POLICY.BYPASS_ACTIVATED` audit log'a yazılır: `admin_id`, `reason` (min 10 karakter), `province_codes`, `active_from`, `active_until`.
+
+[ZORUNLU] BYPASS sınırları:
+- Maksimum süre: **72 saat**. Süre dolduğunda sistem otomatik olarak SMART moduna döner.
+- Süre uzatımı CENTRAL_ADMIN tarafından yapılabilir; her uzatma ayrı `SCAN_POLICY.BYPASS_EXTENDED` audit kaydı oluşturur.
+- BYPASS aktifken admin dashboard'da kırmızı uyarı banner'ı görünür.
+- Kapsam dışı iller SMART modda çalışmaya devam eder; BYPASS il bazında izole edilir.
+
+**Her iki modda da değiştirilemez sabit kurallar:**
+- SHA-256 hash doğrulama **ASLA atlanamaz**.
+- Dosya tipi whitelist kontrolü **ASLA atlanamaz**.
+- verified-bucket'a geçiş ancak ilgili modun tüm kontrolleri başarılıysa yapılır.
+
+### Quarantine Politikası
+- AV fail, hash mismatch, QC fail gibi durumlarda dataset `REJECTED_QUARANTINE`'a alınır.  
+- Quarantine kararları `quarantine_event` ile event/audit'e yazılır.
+
+### SDLC Kabul Kriterleri
+- (Lab) EICAR gibi test vektörü ile AV tetiklenmesi  
+- "AV1 PASS ama AV2 FAIL" senaryosu → dataset quarantine + audit kanıtı  
+- "parse crash" olmamalı: sandbox içinde kontrollü hata ve izolasyon
+- BYPASS aktivasyon testi: kapsam dışı il'e BYPASS uygulanmamalı; 72 saat sonunda otomatik SMART'a dönüş doğrulanmalı
+
+**İlgili maddeler:** [KR-070], [KR-071], [KR-072]
+## [KR-080] Ana İş Akışları için Teknik Kurallar
+
+Bu bölüm; ana iş akışlarının iş planı anlatısında zaten bulunan kısımlarını tekrar etmez. Sadece teknik spesifikasyonda eklenen/sertleştirilen kuralları listeler.
+
+**Tarla Ekleme:**
+- il/ilçe/mahalle/köy + ada/parsel + alan (m²); sistem FieldID üretir
+- Tekil kayıt kuralı: il+ilçe+mahalle/köy+ada+parsel kombinasyonu tekrar edemez
+- Bitki türü tanımı (tarla bazında); birden fazla bitki varsa alan (m²) ile ayrı ayrı
+- Analiz talebi: bitki türü bazında; Sezonluk Paket veya tek seferlik
+- Bitki türü değişimi: yılda 1 defa, sadece 1 Ekim - 31 Aralık (backend kuralı)
+
+**Kooperatif:**
+- Başvuru: evrak + 'Onay Bekliyor' durumunda açılır; admin onayı ile 'Aktif' olur
+- Üye daveti: QR / 6 haneli davet kodu; çiftçi hesabından bağlantıyı onaylar (onay olmadan kooperatif adına işlem kısıtlanabilir)
+- Tarla tekil; sahiplik/erişim ayrı yaklaşımı önerilir (çakışma/yanlış ekleme riskine karşı)
+
+**Pilot:**
+- Pilot desteklenen drone/sensör kombinasyonlarından birini kullanır; drone modeli ve seri numarası doğrulama referansıdır
+- Günlük teslim: uçuş çıktısı her gün hafıza kartı ile yerel istasyona aktarılır
+- Her uçuşta farklı hafıza kartı kullanılır. Drone üreticisi tarafındaki kart kilidi/PIN gibi özellikler varsa opsiyonel ek katmandır; güvenlik garantisi değildir (bkz. [KR-015])
+- Eşleştirme zorunlu: Yüklenen çekimler kayıtlı tarla ile eşleşmezse işlenmez
+- Pilot sonuç raporunu görmez; sadece operasyon durumu görür
+
+**İl Operatörü:**
+- İl operatörü PII görmez; sadece ticari KPI ve kapasite planlama metrikleri görür
+- Coğrafya: ilçe düzeyi veya 1-2 km grid yoğunluk katmanı (pseudonymous)
+
+---
+
+## [KR-081] Kontrat Şemaları (Contract-First) — Kanonik JSON Schema
+
+**Amaç:** "olmalı" seviyesinden çıkıp, kodlamadan önce ortak dilin **makine-doğrulanabilir** (machine-verifiable) hale gelmesi.
+
+Bu bölümde iki kanonik payload tanımı dokümana gömülüdür ve `shared/contracts` üretiminin tek kaynağı olarak kabul edilir.
+
+### KR-081.1 AnalysisJob — JSON Schema (draft 2020-12)
+
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+### KR-081.2 AnalysisResult — JSON Schema
+
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+**Sürümleme kuralı (SemVer):**
+- `v1.x`: geriye uyumlu (backward compatible) eklemeler serbest (optional field eklenebilir)
+- `v2.0`: breaking change; `CONTRACTS_VERSION` ve `CONTRACTS_SHA256` zorunlu güncellenir
+
+---
+
+# BÖLÜM 2: SAHA OPERASYONLARI (SOP)
+
+> **Kaynak:** SAHA_OPERASYON_SOP.md
+
+## 2.1 Temel Kavramlar ve Kimlikler
+
+| Kimlik | Açıklama |
+|--------|----------|
+| FieldID | Sistemde üretilen benzersiz tarla kimliği (Tarla ID) |
+| MissionID | Bir tarlanın belirli bir tarih penceresinde planlanan tek görev kimliği (sistem tarafından üretilir) |
+| BatchID | Yerel istasyona tek seferde yüklenen veri paketi kimliği |
+| CardID | Hafıza kartına verilen envanter kimliği (QR/etiket) |
+| ParcelRef | Ada/parsel referansı (resmi referans), PII değildir |
+
+---
+
+## 2.2 Görev Dosyası Standardı: KMZ içinde WPML
+
+**Pratik standart:** KMZ paketinin içinde WPML ile tanımlı waypoint/waylines görev verisi bulunur (wpmz/template.kml + wpmz/waylines.wpml).
+
+**Görev dosyası adlandırma:**
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+(Dosya adında PII bulunmaz; MissionID dosya adında ve metadata içinde yer alır)
+
+**Seed-KMZ önerisi:** Pilot 2 ile bir kez "doğru ayarlı" örnek görev oluşturulup export edilen KMZ şablon kabul edilir; sistem sadece sınır/parametre alanlarını günceller. Bu, sürüm farklarında kırılmayı azaltır.
+
+---
+
+## 2.3 Pilot 2 Operatör SOP (Saha Adımları)
+
+### 2.3.1 Görev Import
+1. Kumandaya (RC) SD kart veya dahili depolamaya görev KMZ dosyasını kopyala
+2. DJI Pilot 2 > Flight Route > Import Route (KMZ/KML) > dosyayı seç
+3. Görev türünü onayla ve görevi Run/Start ile başlat
+
+### 2.3.2 Görev Bitişi ve Teslim
+1. Görev tamamlandığında, karttaki dosya sayısı/boyutu mantıklı mı kontrol et (aşırı düşükse eksik çekim şüphesidir)
+2. Kart, yerel istasyona teslim edilir
+3. **Pilot PII görmez; sadece MissionID/ParcelRef seviyesinde görev bilgisi görür**
+
+---
+
+## 2.4 Yerel İstasyon: QC + Bütünlük + Eşleştirme
+
+**Öncelik eşleştirme:**
+- MissionID → FieldID
+- MissionID yoksa, kapsama-izi/footprint - field boundary kesişimi ile aday eşleştirme yapılır
+- Düşük güven veya çakışma varsa manuel inceleme kuyruğuna (gerekirse Expert Portal) alınır
+
+**Bütünlük:** MANIFEST.json + SHA-256 hash (dosya listesi, boyutlar, zaman damgaları)
+
+**Hızlı QC (MVP):**
+- coverage_ratio
+- blur/overexposure bayrakları
+- CRS/extent kontrolü (GeoTIFF)
+- eksik bant/indeks bayrakları
+
+**Karantina:** hash uyuşmazlığı, malware şüphesi veya eşleştirme hatası olan paketler quarantine klasörüne alınır, audit log'a yazılır.
+
+---
+
+## 2.5 Pix4Dfields Çıktı Standardı (GeoTIFF)
+
+**Hedef çıktılar:**
+- Ortomozaik
+- İndeks haritaları: Temel (NDVI, NDRE, GNDVI) + Genişletilmiş (EVI, SAVI, chlorophyll-a — Blue bant mevcutsa)
+- Bant kompozitleri
+- Termal haritalar (canopy sıcaklık, CWSI — termal bant mevcutsa; bkz. KR-084)
+
+**Format:** Coğrafi referanslı GeoTIFF (CRS bilgisi ve extent doğru olmalı)
+
+> **Not:** Pix4Dfields, DJI Mavic 3M dahil tüm kayıtlı drone modellerinde NDVI, NDRE ve diğer vegetation index çıktılarını drone-agnostik biçimde üretir. Her drone/sensör kombinasyonu için Pix4Dfields proje şablonu (template) drone_registry.yaml ile senkronize tutulur. DJI Mavic 3M için radyometrik kalibrasyon görelidir (relative); mutlak reflectance için MicaSense/Sentera/Sequoia sınıfı sensörler tercih edilir (bkz. KR-001 radyometri notu + KR-034).
+
+---
+
+## 2.6 YZ Modeli ile Analiz: İzolasyon ve Tek Yönlü Akış
+
+Bu SOP maddesi, operasyonel hatırlatma niteliğindedir.
+
+- Tek yönlü akışın **kanonik normatif tanımı**: **[KR-017]**
+- YZ izolasyon “çerçevesi”: **[KR-070]**
+- Saha güvenlik adımları/checklist: **EK-SOP-SEC**
+- Eşleştirme + QC + karantina: **[KR-016]** + **[KR-066]** + **2.4**
+
+---
+
+## 2.7 Uçuş Manifesti: Pratik ve Sürdürülebilir Yöntem
+
+- Manifesti karta "elle yazmak" yerine, manifesti dijital olarak MissionID merkezli tut
+- Pilot uygulamasında görev check-in/out, yerel istasyonda kart intake taraması
+- **CardID için QR etiket kullan:** pilot göreve başlarken CardID + MissionID eşleştirmesini tek tıkla kaydeder; istasyon teslimde aynı eşleşmeyi doğrular
+- DJI Pilot 2 uçuş kayıtları ihtiyaç halinde kumandadan export edilebilir (Flight Record / log export). Bu kayıtlar, manifestin kanıt katmanıdır.
+
+---
+
+## 2.8 Kaynaklar
+
+- Pix4Dfields dokümantasyonu: kalibrasyon, indeks haritası ve GeoTIFF çıktı standardı (pix4d.com)
+- DJI Cloud API - WPML dokümantasyonu: template.kml ve waylines.wpml referansları (developer.dji.com, 2025)
+- DJI Pilot 2 Flight Record / log export kılavuzu (support.dji.com)
+- WingtraOne / MicaSense RedEdge-P entegrasyon kılavuzu (wingtra.com, micasense.com)
+- Sentera 6X sensör kılavuzu (sentera.com)
+- AgEagle / Altum-PT entegrasyon referansı (ageagle.com)
+
+---
+
+## EK-SOP-SEC: Saha Güvenlik Checklist (Pilot + İstasyon)
+
+Bu ek, saha operasyonunda veri bütünlüğü ve zincir izlenebilirliğini (chain-of-custody) korumak için minimum kontrol listesidir.
+
+### Pilot Checklist
+- [ ] Görev dosyası (KMZ) yalnızca kanonik formatta olmalı ve MissionID/ParcelRef/Date alanları doğrulanmalı
+- [ ] Uçuş sonrası SD kartta beklenmeyen dosya/klasör var mı hızlı kontrol (allowlist dışı ise istasyona bildirim)
+- [ ] SD kart, mühür/etiket ile istasyona teslim; teslim anında CardID/MissionID eşleştirmesi yapılır
+
+### İstasyon (Kiosk/Karantina) Checklist
+- [ ] CardID + MissionID + BatchID kaydı açılır; giriş zamanı ve teslim alan kişi loglanır
+- [ ] Dosya allowlist/MIME/size kontrolü yapılır; uygunsuz içerik karantinaya alınır
+- [ ] SHA-256 manifest üretilir veya doğrulanır; hash uyuşmazlığı varsa karantina + alarm
+- [ ] AV taraması (EICAR dahil test prosedürü) geçmeden hiçbir dosya işlenmez
+- [ ] **M1 İşleme İstasyonu internetsiz** (sadece Pix4D lisans sunucusu allowlist); dış medya steril prosedürü uygulanır; çıktılar fiziksel medya ile M2'ye, imzalı paket olarak aktarılır
+- [ ] Upload/queue sonrası worker sonucu geldiğinde MissionID üzerinden sonuç-tarla eşleşmesi doğrulanır
+- [ ] Tüm adımlar audit log'a yazılır; günlük karantina raporu üretilir
+
+### Minimum Kanıt (Denetim İçin)
+- Manifest dosyası + hash raporu
+- AV tarama raporu
+- Karantina kayıtları (varsa)
+- MissionID tabanlı ingest/işleme log zinciri
+
+---
+
+# BÖLÜM 3: GÖZLEMLENEBİLİRLİK (OBSERVABILITY) STANDARDI
+
+## 3.1 Log Şeması + Correlation ID
+
+Bu standart, **istasyon offline** akışları dahil uçtan uca iz sürmek (trace) ve denetim (audit) için **zorunludur**.
+PII minimizasyonu gereği loglar **PII içermez**; `actor_id_hash` gibi tek-yönlü kimlikler kullanılır.
+
+### Zorunlu Alanlar (JSONL — her satır 1 olay)
+
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+**Kurallar:**
+- `correlation_id` **her zaman zorunlu** ve tüm servislerde aynen taşınır
+- `error.message` max 120 karakter, **PII yok**, stacktrace ayrı (sadece güvenli ortamda)
+
+### Correlation ID Üretimi ve Taşınması (Propagation)
+
+- **Üretim noktası:** `station_kiosk` ingest başlatınca üretir: `corr_<16-32 hex>`
+- **HTTP header:** `X-Correlation-Id: <correlation_id>` zorunlu
+- **W3C Trace Context:** Mümkünse `traceparent` kullanılır; yoksa sadece correlation id yeterlidir
+- **Offline paketleme:** `manifest.json` içine `correlation_id` yazılır ve paket imzasına dahil edilir
+
+### Audit Log (WORM) — Minimum Olay Seti
+
+WORM/immutable audit olayları:
+- `PRICING.UPDATE` (admin) — eski/yeni snapshot hash + kim yaptı
+- `RBAC.ROLE_ASSIGN/ROLE_REVOKE`
+- `EXPERT.ASSIGN/UNASSIGN`
+- `INGEST.QUARANTINE/RELEASE`
+- `JOB.CANCEL`
+- `SECURITY.DENY` (mTLS fail, allowlist fail, signature fail)
+- `RESULT.SIGNATURE_FAIL`
+
+---
+
+# BÖLÜM 4: THREAT MODEL ONE-PAGER
+
+| Varlık (Asset) | Tehdit | Saldırı Yüzeyi | Kontrol / Mitigasyon | Tespit / Kanıt |
+|----------------|--------|----------------|----------------------|----------------|
+| SD Kart | Zararlı dosya / trojan | Pilotun karta dosya eklemesi | Allowlist (uzantı/MIME), boyut limit, AV taraması, karantina | `INGEST.QUARANTINE` audit + AV raporu hash'li |
+| SD Kart | Sahte/eksik içerik | Eksik set, sonradan ekleme | SHA-256 manifest + imza doğrulama | `HASH_MISMATCH` olayı + immutable log |
+| M1 İşleme İstasyonu (air-gapped + Pix4D allowlist) | Offline PC enfeksiyonu | USB/SD üzerinden bulaş | Tek yön veri akışı (M1→M2 fiziksel medya), OS hardening, sadece allowlist device | AV imzaları + boot attestation log (varsa) |
+| EdgeKiosk cihaz kimliği | Cihaz taklidi | mTLS sertifika çalınması | Cihaz kayıt + mTLS + sertifika rotasyonu + iptal listesi | `SECURITY.DENY` + sertifika fingerprint |
+| Backend API | Yetki aşımı | Endpoint suistimali | RBAC, policy testleri, deny-by-default | 403 negatif test kanıtı + audit |
+| Pricing | Fiyat geçmişi bozulması | Admin güncellemesi | PriceBook snapshot + immutable audit | `PRICING.UPDATE` audit + snapshot sha256 |
+| Expert Portal | PII sızıntısı | Panel ekranları | PII yok; sadece FieldID/KPI; maskeleme | Otomatik PII testleri + redaction raporu |
+| Model ağırlıkları | Model çalınması | Worker disk erişimi | Ayrı ağ segmenti, minimal IAM, watermarking | Anomali tespiti + erişim logları |
+| Model zehirleme | Kötü veri girişi | Sahte etiket/uzman | Expert review + provenance + hash zinciri | Review trail + dataset manifest |
+| Job Queue | Replay / duplicate job | Idempotency eksikliği | `idempotency_key` + dedupe | `JOB.DEDUPE` log + metrik |
+| Sonuç katmanları | Manipüle sonuç | Sonuç dosyası değiştirme | Sonuç artifact sha256 + imzalı paket | `RESULT.SIGNATURE_FAIL` |
+| Web/PWA | Hesap ele geçirme | PIN brute force | Rate limit, lockout, cihaz bazlı throttle | `AUTH.DENY` metrik + audit |
+
+---
+
+### Repository İlişkileri (Özet)
+- Contracts (kanonik sözleşmeler): tek kaynak.
+- Platform/Edge/Worker: kontratlara uyar; CI/PR gate ile breaking-change engellenir.
+
+
+[EK: Kod/Şema örnekleri bu sürümden çıkarıldı. (Contracts repo’da kanonik)]
+
+
+---
+
+# BÖLÜM 5: GÜVENLİK VE DENETLENEBİLİRLİK — NAVİGASYON
+
+Bu bölüm, güvenlik kurallarını **tekrar etmek** için değil; SSOT içinde “tek bakışta” doğru yerlere yönlendirmek için vardır.
+
+- **Kimlik + brute-force korumaları:** [KR-050] + (testler: SC-SEC-01/02)
+- **RBAC ve PII ayrımı (KVKK):** [KR-063] + [KR-066]
+- **YZ izolasyonu / one-way akış + kanıt zinciri:** [KR-017] + [KR-070] + [KR-071] + [KR-072] + [KR-073]
+- **Radyometrik kalibrasyon hard gate:** [KR-018] (alias: [KR-082])
+- **Spektral kapasite algılama + graceful degradation:** [KR-018/KR-082] (v1.2.0)
+- **Termal veri işleme ve sulama stresi:** [KR-084]
+- **SDLC güvenlik kapıları + kabul kriterleri:** [KR-040]–[KR-043]
+- **Audit/WORM olay şeması + correlation_id:** BÖLÜM 3
+- **Threat model:** BÖLÜM 4
+- **Saha güvenlik checklist:** EK-SOP-SEC
+
+
+# BÖLÜM 6: TEST SENARYOLARI
+
+## 6.1 Expert Portal Tests
+
+| Senaryo | Test Adımı | Beklenen Sonuç |
+|---------|------------|----------------|
+| SC-EXP-01 | Low confidence (0.68 < 0.75) | Expert review oluşturulur + SMS gönderilir |
+| SC-EXP-02 | Uzman login | Dashboard'da pending count görünür |
+| SC-EXP-03 | İnceleme aç | RGB/NIR görüntüler + Model tahmini |
+| SC-EXP-04 | Verdict submit | Feedback AI Worker'a gönderilir |
+| SC-EXP-05 | SLA aşımı (4s+) | Yedek uzman'a escalation |
+
+## 6.2 Güvenlik Tests
+
+| Senaryo | Test | Sonuç |
+|---------|------|-------|
+| SC-SEC-01 | Rate limit 61 req/min | HTTP 429 |
+| SC-SEC-02 | Brute force 16 fail | 30 min lock |
+| SC-SEC-03 | Model extraction 50+ req/day | Anomaly > 0.8 → Throttle |
+| SC-SEC-04 | SQL injection WAF | HTTP 403 |
+| SC-SEC-05 | Watermark verify | Match > 0.9 → Forensic |
+
+---
