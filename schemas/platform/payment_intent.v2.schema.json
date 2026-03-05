@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://api.tarlaanaliz.com/schemas/platform/payment_intent.v2.schema.json",
   "title": "PaymentIntent",
-  "description": "PaymentIntent v2 — KR-033 kanonik ödeme sözleşmesi. SSOT Uyum: 1.2.0 (2026-02-24).\nDeğişiklikler v1'e göre: receipt_blob_id zorunlu alan; admin_note + rejection_reason eklendi; status enum PAID kanonik (APPROVED/EXPIRED kaldırıldı); field_id eklendi (IBAN eşleştirme); otomatik expire kaldırıldı.\nBkz. enums/payment_status.v2.json + enums/payment_method.v1.json",
+  "description": "PaymentIntent v2 — KR-033 kanonik ödeme sözleşmesi. SSOT Uyum: 1.2.0 (2026-02-24).\nDeğişiklikler v1'e göre: receipt_blob_id zorunlu alan; admin_note + rejection_reason eklendi; status enum PAID kanonik (APPROVED/EXPIRED kaldırıldı); field_id eklendi (IBAN eşleştirme); otomatik expire kaldırıldı.\nBkz. enums/payment_status.enum.v2.json + enums/payment_method.enum.v1.json",
   "type": "object",
   "unevaluatedProperties": false,
   "required": [
@@ -51,11 +51,11 @@
       "description": "Para birimi. Şu an yalnızca TRY desteklenmektedir."
     },
     "method": {
-      "$ref": "../../enums/payment_method.v1.json",
+      "$ref": "../../enums/payment_method.enum.v1.json",
       "description": "Ödeme yöntemi: CREDIT_CARD veya IBAN_TRANSFER."
     },
     "status": {
-      "$ref": "../../enums/payment_status.v2.json",
+      "$ref": "../../enums/payment_status.enum.v2.json",
       "description": "Ödeme durumu. Tüm geçişler PaymentStateMachine üzerinden yapılır — bypass yasaktır."
     },
     "price_snapshot_id": {

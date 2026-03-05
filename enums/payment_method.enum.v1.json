@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/enums/payment_method.v1.json",
+  "$id": "https://api.tarlaanaliz.com/enums/payment_method.enum.v1.json",
   "title": "PaymentMethod",
   "description": "Ödeme yöntemi enum'u — KR-033 kanonik. SSOT Uyum: 1.2.0 (2026-02-24).\nDEĞİŞİKLİK NOTU: IBAN_TRANSFER açıklaması güncellendi — dekont e-posta ile değil uygulama içi yükleme (POST /payments/intents/{id}/upload-receipt) ile gönderilir.",
   "type": "string",
