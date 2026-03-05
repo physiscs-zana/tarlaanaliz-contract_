@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/edge/dataset_manifest.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/edge/dataset_manifest.v1.schema.json",
   "title": "EdgeDatasetManifest",
   "description": "Edge tarafı dataset manifest — KR-072 kanonik. Kiosk'un oluşturduğu ham veri envanteri. Platform tarafındaki dataset_manifest ile senkronize olmalıdır.",
   "type": "object",

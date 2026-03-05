@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/platform/payment_intent.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/platform/payment_intent.v1.schema.json",
   "title": "PaymentIntentV1",
   "description": "PaymentIntent v1 — DEPRECATED: v2 kullanın (payment_intent.v2.schema.json). SSOT Uyum: 1.2.0 (2026-02-24).\nBu versiyon geriye dönük uyumluluk için tutulmaktadır. Yeni geliştirme v2 ile yapılmalıdır.\nKRİTİK: Bu şemada status alanı v2'deki PAID kanonik enum'u kullanmaz. Migration: payment_intent_v1_to_v2.md",
   "deprecated": true,

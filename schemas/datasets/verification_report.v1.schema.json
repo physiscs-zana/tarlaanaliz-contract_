@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/datasets/verification_report.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/datasets/verification_report.v1.schema.json",
   "title": "VerificationReport",
   "description": "Hash/imza doğrulama raporu — KR-073 kanonik. Manifest hash ve dosya hash'lerinin eşleşip eşleşmediğini belgelendirir.",
   "type": "object",

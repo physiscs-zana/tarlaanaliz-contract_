@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/edge/qc_report.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/edge/qc_report.v1.schema.json",
   "title": "EdgeQcReport",
   "description": "Edge tarafı ön kalite kontrol raporu — KR-018 kanonik. Kiosk'ta yapılan hızlı QC kontrolü.",
   "type": "object",

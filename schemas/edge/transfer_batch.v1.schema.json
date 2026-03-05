@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/edge/transfer_batch.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/edge/transfer_batch.v1.schema.json",
   "title": "EdgeTransferBatch",
   "description": "Edge tarafı transfer partisi — KR-071 + KR-072 kanonik. Kiosk'tan platforma gönderilen veri paketi.",
   "type": "object",

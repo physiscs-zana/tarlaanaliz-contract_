@@ -1,0 +1,112 @@
+# drone_capability_matrix.yaml — Drone Bant Kapasitesi ve İndeks Matrisi
+# KR-018/KR-082 v1.2.0 kanonik referans
+# SSOT Uyum: v1.2.0 (2026-03-05)
+#
+# intake_manifest validasyonu bu matris ile çapraz doğrulanır:
+# manifest'teki available_bands ile bu matristeki tanım uyuşmazsa QC.BAND_MISMATCH_WARNING üretilir.
+
+capabilities:
+  DJI_MAVIC_3M:
+    band_class: BASIC_4BAND
+    supported_bands: [GREEN, RED, RED_EDGE, NIR]
+    red_edge_wavelength_nm: 730
+    red_edge_sentinel2_band: B6
+    available_indices:
+      core: [NDVI, NDRE, GNDVI, CIR]
+      extended: []
+      thermal: []
+    calibration_class: relative
+    notes: >
+      Red Edge ~730 nm (Sentinel-2 Band 6'ya yakın).
+      Pix4Dfields göreli kalibrasyon sağlar.
+
+  DJI_M350_RTK_SENTERA_6X:
+    band_class: EXTENDED_5BAND
+    supported_bands: [BLUE, GREEN, RED, RED_EDGE, NIR]
+    red_edge_wavelength_nm: 717
+    red_edge_sentinel2_band: B5
+    available_indices:
+      core: [NDVI, NDRE, GNDVI, CIR]
+      extended: [EVI, SAVI, CHLOROPHYLL_A]
+      thermal: []
+    calibration_class: absolute
+    thermal_variant:
+      model: Sentera 6X Thermal
+      thermal_sensor: FLIR_BOSON_640
+      thermal_bands: [LWIR]
+      thermal_indices: [CWSI, CANOPY_TEMP, CANOPY_SOIL_DELTA]
+    notes: >
+      Blue bant (475 nm ±30 nm). ILS + reflectance panel.
+      Termal varyant mevcut (Sentera 6X Thermal).
+
+  WINGTRAONE_GEN2_MICASENSE_REDEDGE_P:
+    band_class: EXTENDED_5BAND
+    supported_bands: [BLUE, GREEN, RED, RED_EDGE, NIR]
+    red_edge_wavelength_nm: 717
+    red_edge_sentinel2_band: B5
+    available_indices:
+      core: [NDVI, NDRE, GNDVI, CIR]
+      extended: [EVI, SAVI, CHLOROPHYLL_A]
+      thermal: []
+    calibration_class: absolute
+    notes: >
+      Blue bant (475 nm ±32 nm). DLS2 + reflectance panel.
+      VTOL — büyük alan verimliliği.
+
+  PARROT_ANAFI_USA_SEQUOIA_PLUS:
+    band_class: BASIC_4BAND
+    supported_bands: [GREEN, RED, RED_EDGE, NIR]
+    red_edge_wavelength_nm: 735
+    red_edge_sentinel2_band: B6
+    available_indices:
+      core: [NDVI, NDRE, GNDVI, CIR]
+      extended: []
+      thermal: []
+    calibration_class: absolute
+    notes: Pix4Dfields tam radyometrik kalibrasyon destekli.
+
+  AGEAGLE_EBEE_X_ALTUM_PT:
+    band_class: EXTENDED_5BAND
+    supported_bands: [BLUE, GREEN, RED, RED_EDGE, NIR, LWIR]
+    red_edge_wavelength_nm: 717
+    red_edge_sentinel2_band: B5
+    available_indices:
+      core: [NDVI, NDRE, GNDVI, CIR]
+      extended: [EVI, SAVI, CHLOROPHYLL_A]
+      thermal: [CWSI, CANOPY_TEMP, CANOPY_SOIL_DELTA, IRRIGATION_EFFICIENCY]
+    calibration_class: absolute
+    thermal_sensor: FLIR_BOSON_320
+    notes: >
+      Fabrika radyometrik kalibrasyon + termal (FLIR Boson 320x256).
+      Fixed-wing — geniş alan verimliliği + multispektral + termal.
+
+# Band class definitions
+band_classes:
+  BASIC_4BAND:
+    minimum_bands: [GREEN, RED, RED_EDGE, NIR]
+    description: "Temel 4 bant — NDVI, NDRE, GNDVI, CIR"
+    report_level: "Temel Sağlık Raporu"
+  EXTENDED_5BAND:
+    minimum_bands: [BLUE, GREEN, RED, RED_EDGE, NIR]
+    description: "Genişletilmiş 5 bant — EVI, SAVI, chlorophyll-a, Sentinel-2 uyumlu"
+    report_level: "Genişletilmiş Rapor"
+  THERMAL:
+    requires: [LWIR]
+    description: "Termal bant — CWSI, canopy sıcaklık, sulama stresi"
+    report_level: "Kapsamlı Rapor (5 bant + termal)"
+
+# Validation rules
+validation:
+  band_mismatch_action: QC.BAND_MISMATCH_WARNING
+  minimum_bands_required: 4
+  minimum_band_set: [GREEN, RED, RED_EDGE, NIR]
+  notes: >
+    intake_manifest.available_bands ile bu matristeki supported_bands
+    uyuşmazsa QC.BAND_MISMATCH_WARNING üretilir.
+    4 banttan az veri kabul edilmez (KR-030).
+
+# Metadata
+metadata:
+  version: "1.2.0"
+  last_updated: "2026-03-05"
+  kr_refs: ["KR-018", "KR-082", "KR-030", "KR-084"]

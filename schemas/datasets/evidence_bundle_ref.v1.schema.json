@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/datasets/evidence_bundle_ref.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/datasets/evidence_bundle_ref.v1.schema.json",
   "title": "EvidenceBundleRef",
   "description": "Kanıt paketi referansı — KR-072 kanonik. Bir dataset'in tüm kanıt zincirini (attestation, scan, verification, QC, calibration) tek bir referansta toplar.",
   "type": "object",

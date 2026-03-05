@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/platform/payment_intent.v2.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/platform/payment_intent.v2.schema.json",
   "title": "PaymentIntent",
   "description": "PaymentIntent v2 — KR-033 kanonik ödeme sözleşmesi. SSOT Uyum: 1.2.0 (2026-02-24).\nDeğişiklikler v1'e göre: receipt_blob_id zorunlu alan; admin_note + rejection_reason eklendi; status enum PAID kanonik (APPROVED/EXPIRED kaldırıldı); field_id eklendi (IBAN eşleştirme); otomatik expire kaldırıldı.\nBkz. enums/payment_status.v2.json + enums/payment_method.v1.json",
   "type": "object",

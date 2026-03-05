@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/events/derived_published.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/events/derived_published.v1.schema.json",
   "title": "DerivedPublished",
   "description": "Türetilmiş ürünler yayınlandı — KR-072. NDVI haritaları, hastalık tespiti raporları vb. çiftçiye sunuldu.",
   "type": "object",

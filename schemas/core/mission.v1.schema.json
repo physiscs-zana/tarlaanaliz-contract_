@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/core/mission.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/core/mission.v1.schema.json",
   "title": "Mission",
   "description": "Uçuş görevi (Mission) veri sözleşmesi — KR-028 kanonik. SSOT Uyum: 1.2.0 (2026-02-24).\nDEĞİŞİKLİK NOTU: drone_model alanı DroneType enum'una bağlandı (drone-agnostik mimari, KR-015). mission_source alanı eklendi (tek seferlik vs Sezonluk Paket).",
   "type": "object",

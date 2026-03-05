@@ -25,13 +25,30 @@ def validate_json_schema(schema_path: Path) -> List[str]:
         elif 'draft/2020-12' not in schema['$schema']:
             errors.append(f"Wrong draft version in {schema_path} (must be 2020-12)")
         
+        # Check $id (KR-081: mandatory, must use canonical URL)
+        if '$id' not in schema:
+            errors.append(f"Missing $id in {schema_path}")
+        elif not schema['$id'].startswith('https://api.tarlaanaliz.com/schemas/'):
+            errors.append(
+                f"Invalid $id format in {schema_path}: "
+                f"must start with https://api.tarlaanaliz.com/schemas/"
+            )
+
+        # Check title (KR-081: mandatory)
+        if 'title' not in schema:
+            errors.append(f"Missing title in {schema_path}")
+
+        # Check type (KR-081: mandatory)
+        if 'type' not in schema:
+            errors.append(f"Missing type in {schema_path}")
+
         # Check unevaluatedProperties
         if schema.get('type') == 'object':
             if 'unevaluatedProperties' not in schema:
                 errors.append(f"Missing unevaluatedProperties in {schema_path}")
             elif schema['unevaluatedProperties'] != False:
                 errors.append(f"unevaluatedProperties must be false in {schema_path}")
-        
+
         # Check for forbidden fields
         schema_str = json.dumps(schema).lower()
         for field in FORBIDDEN_FIELDS:

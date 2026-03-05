@@ -42,6 +42,11 @@ class TestExamplesValidation:
         'intake_manifest.example.json': 'edge/intake_manifest.v1.schema.json',
         'analysis_job.example.json': 'worker/analysis_job.v1.schema.json',
         'analysis_result.example.json': 'worker/analysis_result.v1.schema.json',
+        'dataset.example.json': 'datasets/dataset.v1.schema.json',
+        'dataset_manifest.example.json': 'datasets/dataset_manifest.v1.schema.json',
+        'payment_intent_creditcard_paid.example.json': 'platform/payment_intent.v2.schema.json',
+        'payment_intent_iban_paid.example.json': 'platform/payment_intent.v2.schema.json',
+        'payment_intent_iban_pending.example.json': 'platform/payment_intent.v2.schema.json',
     }
     
     def load_schema(self, schema_path: Path) -> Dict[str, Any]:

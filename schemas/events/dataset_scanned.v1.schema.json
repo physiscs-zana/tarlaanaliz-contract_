@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/events/dataset_scanned.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/events/dataset_scanned.v1.schema.json",
   "title": "DatasetScanned",
   "description": "Dataset AV taraması tamamlandı — KR-073. AV1 (edge) veya AV2 (platform) sonucu.",
   "type": "object",

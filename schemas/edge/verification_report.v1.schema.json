@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/edge/verification_report.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/edge/verification_report.v1.schema.json",
   "title": "EdgeVerificationReport",
   "description": "Edge tarafı hash doğrulama raporu — KR-073 kanonik. Kiosk'ta dosya hash'lerinin manifest ile eşleştirilmesi.",
   "type": "object",

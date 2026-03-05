@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/datasets/qc_report.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/datasets/qc_report.v1.schema.json",
   "title": "QcReport",
   "description": "Kalite kontrol raporu — KR-018 + KR-072 kanonik. Kalibrasyon sonrası veri kalitesini değerlendirir.",
   "type": "object",

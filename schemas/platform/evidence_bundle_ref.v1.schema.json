@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/platform/evidence_bundle_ref.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/platform/evidence_bundle_ref.v1.schema.json",
   "title": "PlatformEvidenceBundleRef",
   "description": "Platform tarafı kanıt paketi referansı — KR-072 kanonik. Merkezi sistemde saklanan, dataset'e ait tüm kanıt dökümanlarının toplu referansı. Audit ve compliance sorgularında kullanılır.",
   "type": "object",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/events/dataset_dispatched.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/events/dataset_dispatched.v1.schema.json",
   "title": "DatasetDispatched",
   "description": "Dataset worker node'a gönderildi — KR-072. analysis_job oluşturuldu.",
   "type": "object",

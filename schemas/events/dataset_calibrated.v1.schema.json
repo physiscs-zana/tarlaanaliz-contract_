@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/events/dataset_calibrated.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/events/dataset_calibrated.v1.schema.json",
   "title": "DatasetCalibrated",
   "description": "Dataset radyometrik kalibrasyonu tamamlandı — KR-018.",
   "type": "object",

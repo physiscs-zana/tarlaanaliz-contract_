@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/edge/calibration_result.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/edge/calibration_result.v1.schema.json",
   "title": "CalibrationResult",
   "description": "Edge tarafı kalibrasyon sonucu — KR-018 kanonik. Kiosk'ta yapılan ön kalibrasyon işleminin sonucunu belgelendirir.",
   "type": "object",
@@ -77,13 +77,40 @@
         "null"
       ]
     },
+    "thermal_calibration": {
+      "type": ["object", "null"],
+      "description": "Termal kalibrasyon kanıtı. Yalnızca LWIR termal bant mevcut olduğunda doldurulur. KR-084.",
+      "properties": {
+        "sensor_type": {
+          "type": "string",
+          "enum": ["FLIR_BOSON_320", "FLIR_BOSON_640"],
+          "description": "Termal sensör tipi."
+        },
+        "factory_calibration_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Fabrika radyometrik kalibrasyon tarihi."
+        },
+        "thermal_accuracy_celsius": {
+          "type": "number",
+          "description": "Termal doğruluk (Celsius)."
+        },
+        "calibration_method": {
+          "type": "string",
+          "enum": ["FACTORY_RADIOMETRIC", "FACTORY_RADIOMETRIC_ILS"],
+          "description": "Termal kalibrasyon yöntemi."
+        }
+      },
+      "unevaluatedProperties": false
+    },
     "processed_at": {
       "type": "string",
       "format": "date-time"
     }
   },
   "x-kr-ref": [
-    "KR-018"
+    "KR-018",
+    "KR-084"
   ],
   "x-ssot-version": "1.2.0",
   "x-updated": "2026-03-03"
