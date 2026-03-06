@@ -1,10 +1,10 @@
 # TarlaAnaliz Contracts Version Lock
 
-## Version: 2.0.0
+## Version: 2.0.1
 
-**Release Date:** 2026-03-06T04:29:08.936927Z  
-**Breaking Change:** YES  
-**Contracts Checksum (SHA-256):** `296746214c058421d2a91c8d2a09595fede847af9cdf83e5013f526c8b360905`
+**Release Date:** 2026-03-06T20:05:25.935613Z  
+**Breaking Change:** NO  
+**Contracts Checksum (SHA-256):** `12b7ebcea698b44bfc4203d79147588f6bce9f102c03c741f5c67c61f727cee2`
 
 ---
 
@@ -66,7 +66,7 @@ Individual file hashes for verification:
 - `schemas/edge/edge_metadata.v1.schema.json`  
   `d081229b4092d67d1a38e61b994a8d4a83010d695c6b0769c3e31ac80312f851`
 - `schemas/edge/intake_manifest.v1.schema.json`  
-  `d9a0a83bddabde90cb49f6355cb6bc9c9b70d2b5e89328787a401810488f5417`
+  `04eacdf1d8aa4335c1792a038061a2c13f8a5b65a913ceda951b9f859992611a`
 - `schemas/edge/qc_report.v1.schema.json`  
   `4193e9c6d73ddd98bf62ba5b2ea034263cb9a86b69f6c549e7d77ed5bc93d219`
 - `schemas/edge/quarantine_event.v1.schema.json`  
@@ -81,11 +81,11 @@ Individual file hashes for verification:
 ### Worker Schemas
 
 - `schemas/worker/analysis_job.v1.schema.json`  
-  `426db4ed780e5bb0a7e8bb53fd5ea6564fe02139f96f91102e3e457a92180331`
+  `3de19e3e8acac55efa2fc54af35134f1d08567292f9e2149a75bbd825b596def`
 - `schemas/worker/analysis_result.v1.schema.json`  
   `69af83931b8f8ae66f4f2981362e772a54073f44de6b680c4bf9c32c3ae9f5af`
 - `schemas/worker/thermal_analysis_result.v1.schema.json`  
-  `3a9f522b453656dfb7bce8b1897a3de4a8b3cfd1fedccd9a8bd780562ee75c66`
+  `6e14daad11df13a253cca0ddc20ff8567426a393bdabaac3d1a59d3c048027ca`
 
 ### Events
 
@@ -159,11 +159,11 @@ Individual file hashes for verification:
 
 ## Changelog
 
-### v2.0.0 (2026-03-06)
+### v2.0.1 (2026-03-06)
 
-**Breaking:** YES
+**Breaking:** NO
 
-Version 2.0.0: schema compliance fixes, enhanced validation
+Version pinned automatically.
 
 ---
 
@@ -181,7 +181,7 @@ def verify_contracts(expected_checksum: str) -> bool:
     actual_checksum = compute_contracts_checksum()
     return actual_checksum == expected_checksum
 
-assert verify_contracts("296746214c058421d2a91c8d2a09595fede847af9cdf83e5013f526c8b360905"), "Contracts checksum mismatch!"
+assert verify_contracts("12b7ebcea698b44bfc4203d79147588f6bce9f102c03c741f5c67c61f727cee2"), "Contracts checksum mismatch!"
 ```
 
 ### Node.js
@@ -194,7 +194,7 @@ function verifyContracts(expectedChecksum) {
   return actualChecksum === expectedChecksum;
 }
 
-assert(verifyContracts("296746214c058421d2a91c8d2a09595fede847af9cdf83e5013f526c8b360905"), "Contracts checksum mismatch!");
+assert(verifyContracts("12b7ebcea698b44bfc4203d79147588f6bce9f102c03c741f5c67c61f727cee2"), "Contracts checksum mismatch!");
 ```
 
 ### CI/CD Integration
@@ -245,4 +245,4 @@ git submodule update --remote
 - **Hash Algorithm:** SHA-256 (collision-resistant, FIPS 140-2 compliant)
 - **Timestamp:** ISO 8601 UTC format
 
-**Last Updated:** 2026-03-06T04:29:08.936927Z
+**Last Updated:** 2026-03-06T20:05:25.935613Z

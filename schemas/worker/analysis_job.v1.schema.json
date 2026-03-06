@@ -32,16 +32,15 @@
     "analysis_types": {
       "type": "array",
       "items": {
-        "type": "string",
-        "description": "Analysis types requested (reference: enums/analysis_type.enum.v1.json)"
+        "$ref": "../../enums/analysis_type.enum.v1.json"
       },
       "minItems": 1,
       "uniqueItems": true,
-      "description": "Requested analysis types"
+      "description": "Requested analysis types (KR-002 harita katmanları)"
     },
     "crop_type": {
-      "type": "string",
-      "description": "Crop type (reference: enums/crop_type.enum.v1.json)"
+      "$ref": "../../enums/crop_type.enum.v1.json",
+      "description": "Crop type — bitki türü (KR-016 routing)"
     },
     "requires_calibrated": {
       "type": "boolean",
@@ -315,7 +314,7 @@
       "mission_id": "mission_60a7f1b8c9d4e5f6a7b8c9d0",
       "batch_id": "batch_60a7f1b8c9d4e5f6a7b8c9d0",
       "manifest_id": "manifest_60a7f1b8c9d4e5f6a7b8c9d1",
-      "analysis_types": ["NDVI", "NDRE", "HEALTH_INDEX", "DISEASE_DETECTION"],
+      "analysis_types": ["HEALTH", "DISEASE", "WATER_STRESS", "NITROGEN_STRESS"],
       "crop_type": "COTTON",
       "inputs": [
         {

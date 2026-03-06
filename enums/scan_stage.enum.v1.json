@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/enums/scan_stage.enum.v1.json",
+  "$id": "https://api.tarlaanaliz.com/enums/scan_stage.enum.v1.json",
   "title": "ScanStage",
   "description": "AV tarama aşaması — KR-073 kanonik. Edge (AV1) ve Platform (AV2) taramalarını ayırt eder.",
   "type": "string",

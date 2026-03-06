@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/enums/verification_status.enum.v1.json",
+  "$id": "https://api.tarlaanaliz.com/enums/verification_status.enum.v1.json",
   "title": "VerificationStatus",
   "description": "Hash/imza doğrulama sonucu — KR-073 kanonik. Manifest hash ve dosya hash'lerinin eşleşip eşleşmediğini belirtir.",
   "type": "string",

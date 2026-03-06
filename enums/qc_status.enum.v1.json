@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/enums/qc_status.enum.v1.json",
+  "$id": "https://api.tarlaanaliz.com/enums/qc_status.enum.v1.json",
   "title": "QcStatus",
   "description": "Kalite kontrol (QC) sonuç durumu — KR-018 + KR-072 kanonik. SSOT Uyum: 1.2.0.",
   "type": "string",
