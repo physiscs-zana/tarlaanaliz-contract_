@@ -24,3 +24,5 @@ generated/
 .DS_Store
 .idea/
 .vscode/
+coverage.xml
+coverage_html/
