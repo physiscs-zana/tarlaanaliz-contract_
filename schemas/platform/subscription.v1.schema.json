@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.tarlaanaliz.com/schemas/platform/subscription.v1.schema.json",
+  "title": "Subscription",
+  "description": "Sezonluk Paket abonelik sözleşmesi — KR-027/KR-028 kanonik. SSOT Uyum: 1.2.0 (2026-02-24).\nSezonluk Paket seçen kullanıcılar için otomatik, periyodik Mission üretimi sağlar. Scheduler next_due_at alanına göre yeni Mission oluşturur.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "subscription_id",
+    "user_id",
+    "field_id",
+    "crop_type",
+    "interval_days",
+    "status",
+    "price_snapshot_id",
+    "created_at"
+  ],
+  "properties": {
+    "subscription_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Abonelik benzersiz kimliği (UUID v4)."
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Aboneliği oluşturan kullanıcının user_id değeri (pseudonymous — PII değil)."
+    },
+    "field_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Aboneliğin bağlı olduğu tarla kimliği."
+    },
+    "crop_type": {
+      "$ref": "../../enums/crop_type.enum.v1.json",
+      "description": "Abonelik kapsamındaki bitki türü."
+    },
+    "interval_days": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 30,
+      "description": "Tarama periyodu (gün). KR-024'e göre bitki türüne göre önerilir."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PENDING_PAYMENT", "ACTIVE", "PAUSED", "CANCELLED", "EXPIRED"],
+      "description": "Abonelik durumu. PENDING_PAYMENT iken scheduler çalışmaz."
+    },
+    "price_snapshot_id": {
+      "type": "string",
+      "description": "Abonelik oluşturulma anındaki fiyat snapshot referansı (immutable)."
+    },
+    "payment_intent_id": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "İlişkili PaymentIntent kimliği."
+    },
+    "start_date": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "Abonelik başlangıç tarihi. ACTIVE durumuna geçişte set edilir."
+    },
+    "end_date": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "Abonelik bitiş tarihi (sezon sonu)."
+    },
+    "next_due_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Bir sonraki tarama zamanı (ISO 8601). Scheduler bu alanı kontrol eder."
+    },
+    "total_missions_created": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Bu abonelik kapsamında oluşturulan toplam Mission sayısı."
+    },
+    "paused_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "PAUSED durumuna geçiş zamanı (ISO 8601)."
+    },
+    "cancelled_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "CANCELLED durumuna geçiş zamanı (ISO 8601)."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Abonelik oluşturulma zamanı (ISO 8601)."
+    },
+    "updated_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "Son güncelleme zamanı (ISO 8601)."
+    }
+  },
+  "x-state-machine": {
+    "transitions": [
+      { "from": "PENDING_PAYMENT", "to": "ACTIVE", "trigger": "Ödeme tamamlandı (PAID)" },
+      { "from": "ACTIVE", "to": "PAUSED", "trigger": "Kullanıcı veya admin duraklattı" },
+      { "from": "PAUSED", "to": "ACTIVE", "trigger": "Kullanıcı veya admin devam ettirdi" },
+      { "from": "ACTIVE", "to": "CANCELLED", "trigger": "Kullanıcı veya admin iptal etti" },
+      { "from": "PAUSED", "to": "CANCELLED", "trigger": "Kullanıcı veya admin iptal etti" },
+      { "from": "ACTIVE", "to": "EXPIRED", "trigger": "Sezon bitişi (end_date geçti)" }
+    ],
+    "notes": "PENDING_PAYMENT iken scheduler çalışmaz. CANCELLED/EXPIRED geri döndürülemez."
+  },
+  "x-business-rules": {
+    "scheduler": "Her gün/saat cron job çalışır; status=ACTIVE AND next_due_at <= now() abonelikleri bulur ve yeni Mission oluşturur.",
+    "duplicate_prevention": "Scheduler FOR UPDATE SKIP LOCKED ile duplicate önler.",
+    "payment_gate": "PAID olmadan Subscription ACTIVE olamaz; PENDING_PAYMENT iken scheduler çalışmaz (KR-033).",
+    "interval_recommendation": "Periyot bitki türüne göre önerilir (KR-024); öneri dışı seçimde kullanıcıya uyarı gösterilir."
+  },
+  "x-api-endpoints": [
+    "POST /subscriptions",
+    "GET /subscriptions/{id}",
+    "POST /subscriptions/{id}/pause",
+    "POST /subscriptions/{id}/resume",
+    "POST /subscriptions/{id}/cancel"
+  ],
+  "x-kr-ref": ["KR-027", "KR-028"],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-02-24"
+}

@@ -22,6 +22,11 @@ These examples serve multiple purposes:
 | `intake_manifest.example.json` | `edge/intake_manifest.v1.schema.json` | Edge intake batch |
 | `analysis_job.example.json` | `worker/analysis_job.v1.schema.json` | AI analysis job |
 | `analysis_result.example.json` | `worker/analysis_result.v1.schema.json` | AI analysis result |
+| `dataset.example.json` | `datasets/dataset.v1.schema.json` | Dataset entity |
+| `dataset_manifest.example.json` | `datasets/dataset_manifest.v1.schema.json` | Dataset manifest |
+| `payment_intent_creditcard_paid.example.json` | `platform/payment_intent.v2.schema.json` | Credit card payment (PAID) |
+| `payment_intent_iban_paid.example.json` | `platform/payment_intent.v2.schema.json` | IBAN transfer payment (PAID) |
+| `payment_intent_iban_pending.example.json` | `platform/payment_intent.v2.schema.json` | IBAN transfer payment (PENDING) |
 
 ---
 

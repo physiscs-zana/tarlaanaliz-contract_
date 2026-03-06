@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/edge/intake_manifest.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/edge/intake_manifest.v1.schema.json",
   "title": "IntakeManifest",
   "description": "İstasyona alınan batch manifesti — chain-of-custody kanıt kaydı. KR-072 + KR-073 kanonik. SSOT Uyum: 1.2.0 (2026-02-24).\nDEĞİŞİKLİK NOTU: drone_model alanı DroneType enum'una bağlandı (drone-agnostik mimari, KR-015 + KR-030). Drone whitelist drone_registry.yaml üzerinden yapılır.",
   "type": "object",
@@ -84,6 +84,15 @@
         "REJECTED_QUARANTINE"
       ],
       "description": "Dataset yaşam döngüsü durumu. KR-072 state machine. İstasyon tarafı: RAW_INGESTED → RAW_SCANNED_EDGE_OK → RAW_HASH_SEALED."
+    },
+    "available_bands": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "string",
+        "enum": ["GREEN", "RED", "RED_EDGE", "NIR", "BLUE", "LWIR"]
+      },
+      "description": "Sensörün ürettiği spektral bantlar. Minimum 4 bant zorunlu (GREEN + RED + RED_EDGE + NIR). Blue bant mevcutsa genişletilmiş analiz, LWIR mevcutsa termal pipeline etkinleşir. drone_capability_matrix.yaml ile çapraz doğrulanır. KR-018/KR-082 v1.2.0."
     },
     "created_at": {
       "type": "string",

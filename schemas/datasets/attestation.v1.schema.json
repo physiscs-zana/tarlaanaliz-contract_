@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/datasets/attestation.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/datasets/attestation.v1.schema.json",
   "title": "Attestation",
   "description": "Kanıt zinciri onay belgesi — KR-072 kanonik. Dataset'in belirli bir durumdan geçtiğinin kriptografik kanıtı.",
   "type": "object",
@@ -81,7 +81,8 @@
           ],
           "format": "uri-reference"
         }
-      }
+      },
+      "unevaluatedProperties": false
     }
   },
   "x-kr-ref": [

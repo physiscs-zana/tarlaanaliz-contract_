@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/edge/scan_report.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/edge/scan_report.v1.schema.json",
   "title": "EdgeScanReport",
   "description": "Edge tarafı AV1 tarama raporu — KR-073 kanonik. Kiosk'taki ilk AV taramasının sonucu.",
   "type": "object",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/enums/payment_status.v1.json",
+  "$id": "https://api.tarlaanaliz.com/enums/payment_status.enum.v1.json",
   "title": "PaymentStatus",
   "description": "Ödeme durumu enum'u — KR-033 kanonik. SSOT Uyum: 1.2.0 (2026-02-24).\nDEĞİŞİKLİK NOTU: APPROVED kaldırıldı (kanonik durum PAID'dir). EXPIRED kaldırıldı (otomatik expire yok; admin kararıyla CANCELLED yapılır).",
   "type": "string",

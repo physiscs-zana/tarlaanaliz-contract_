@@ -85,6 +85,32 @@
         ]
       }
     },
+    "thermal_calibration": {
+      "type": ["object", "null"],
+      "description": "Termal kalibrasyon kanıtı. Yalnızca LWIR termal bant mevcut olduğunda doldurulur. KR-084.",
+      "properties": {
+        "sensor_type": {
+          "type": "string",
+          "enum": ["FLIR_BOSON_320", "FLIR_BOSON_640"],
+          "description": "Termal sensör tipi (Altum-PT: 320x256, Sentera 6X Thermal: 640)."
+        },
+        "factory_calibration_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Fabrika radyometrik kalibrasyon tarihi."
+        },
+        "thermal_accuracy_celsius": {
+          "type": "number",
+          "description": "Termal doğruluk (Celsius)."
+        },
+        "calibration_method": {
+          "type": "string",
+          "enum": ["FACTORY_RADIOMETRIC", "FACTORY_RADIOMETRIC_ILS"],
+          "description": "Termal kalibrasyon yöntemi. Altum-PT: FACTORY_RADIOMETRIC + Pix4Dfields pipeline. Sentera 6X: FACTORY_RADIOMETRIC_ILS."
+        }
+      },
+      "unevaluatedProperties": false
+    },
     "notes": {
       "type": "string"
     },

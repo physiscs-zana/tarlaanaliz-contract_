@@ -1,7 +1,7 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "UserRole",
-  "description": "Enumeration of user roles for RBAC (Role-Based Access Control)",
+  "description": "DEPRECATED: role.enum.v1.json kullanın. Legacy RBAC roller (KR-063). Draft 2020-12 uyumlu hale getirildi.",
   "type": "string",
   "enum": [
     "FARMER",
@@ -11,7 +11,9 @@
     "UNION_ADMIN",
     "SYSTEM_ADMIN"
   ],
-  "enumDescriptions": {
+  "x-deprecated": true,
+  "x-superseded-by": "role.enum.v1.json",
+  "x-enumDescriptions": {
     "FARMER": "Farmer - Field owner who requests aerial surveys",
     "PILOT": "Drone pilot - Executes flight missions",
     "KIOSK_OPERATOR": "Kiosk operator - Manages SD card intake at collection points",
@@ -19,47 +21,15 @@
     "UNION_ADMIN": "Union administrator - Manages regional union of cooperatives",
     "SYSTEM_ADMIN": "System administrator - Full system access"
   },
-  "permissions": {
-    "FARMER": [
-      "field:create",
-      "field:read:own",
-      "field:update:own",
-      "field:delete:own",
-      "mission:read:own",
-      "report:read:own"
-    ],
-    "PILOT": [
-      "mission:read:assigned",
-      "mission:update:assigned",
-      "mission:complete",
-      "flight:upload"
-    ],
-    "KIOSK_OPERATOR": [
-      "intake:create",
-      "intake:read:own_kiosk",
-      "batch:upload"
-    ],
-    "COOP_ADMIN": [
-      "field:read:coop",
-      "mission:create",
-      "mission:read:coop",
-      "mission:assign",
-      "user:read:coop",
-      "report:read:coop"
-    ],
-    "UNION_ADMIN": [
-      "field:read:union",
-      "mission:read:union",
-      "user:read:union",
-      "user:create",
-      "report:read:union",
-      "analytics:read:union"
-    ],
-    "SYSTEM_ADMIN": [
-      "*:*"
-    ]
+  "x-permissions": {
+    "FARMER": ["field:create", "field:read:own", "field:update:own", "field:delete:own", "mission:read:own", "report:read:own"],
+    "PILOT": ["mission:read:assigned", "mission:update:assigned", "mission:complete", "flight:upload"],
+    "KIOSK_OPERATOR": ["intake:create", "intake:read:own_kiosk", "batch:upload"],
+    "COOP_ADMIN": ["field:read:coop", "mission:create", "mission:read:coop", "mission:assign", "user:read:coop", "report:read:coop"],
+    "UNION_ADMIN": ["field:read:union", "mission:read:union", "user:read:union", "user:create", "report:read:union", "analytics:read:union"],
+    "SYSTEM_ADMIN": ["*:*"]
   },
-  "hierarchy": {
+  "x-hierarchy": {
     "SYSTEM_ADMIN": 6,
     "UNION_ADMIN": 5,
     "COOP_ADMIN": 4,
@@ -67,12 +37,10 @@
     "PILOT": 2,
     "FARMER": 1
   },
-  "metadata": {
-    "version": "1.0.0",
-    "lastUpdated": "2025-01-24",
-    "usedIn": [
-      "schemas/core/user.v1.schema.json",
-      "api/platform_public.v1.yaml"
-    ]
+  "x-metadata": {
+    "version": "1.0.1",
+    "lastUpdated": "2026-03-05",
+    "usedIn": ["schemas/core/user.v1.schema.json", "api/platform_public.v1.yaml"],
+    "migration": "Yeni geliştirmeler için role.enum.v1.json kullanın. Bu dosya geriye dönük uyumluluk için tutulmaktadır."
   }
 }

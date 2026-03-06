@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/datasets/transfer_batch.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/datasets/transfer_batch.v1.schema.json",
   "title": "TransferBatch",
   "description": "Veri transfer partisi — KR-072 + KR-071 kanonik. Edge kiosk'tan platforma aktarılan dataset grubunu temsil eder.",
   "type": "object",

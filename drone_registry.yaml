@@ -1,0 +1,128 @@
+# drone_registry.yaml — Kayıtlı Drone/Sensör Kombinasyonları
+# KR-001, KR-015, KR-030, KR-034 kanonik referans
+# SSOT Uyum: v1.2.0 (2026-03-05)
+#
+# Bu dosya desteklenen drone/sensör kombinasyonlarını tanımlar.
+# intake_manifest'teki drone_serial whitelist kontrolü bu kayıt defterine göre yapılır.
+# Yeni drone modeli eklemek için: drone_type.enum.v1.json + bu dosya + drone_capability_matrix.yaml güncellenmeli.
+
+drones:
+  - drone_type: DJI_MAVIC_3M
+    manufacturer: DJI
+    model: Mavic 3 Multispectral
+    platform: multirotor
+    status: active
+    primary: true
+    sensor:
+      name: DJI M3M Integrated Multispectral
+      bands: [GREEN, RED, RED_EDGE, NIR]
+      band_class: BASIC_4BAND
+      rgb: true
+      thermal: false
+    calibration:
+      software: Pix4Dfields
+      calibration_type: relative
+      notes: >
+        Pix4Dfields M3M için göreli (relative) kalibrasyon sağlar;
+        mutlak reflectance yerine reflectance'a orantılı değerler üretir.
+        Bkz. KR-001 radyometri notu + KR-018.
+    pix4d_template: dji_mavic_3m_standard
+    notes: >
+      Birincil/önerilen multirotor. GAP bölgesi operasyonları için uygun.
+      DJI tedarik riski için bkz. KR-034.
+
+  - drone_type: DJI_M350_RTK_SENTERA_6X
+    manufacturer: DJI + Sentera
+    model: Matrice 350 RTK + Sentera 6X
+    platform: multirotor
+    status: active
+    primary: false
+    sensor:
+      name: Sentera 6X
+      bands: [BLUE, GREEN, RED, RED_EDGE, NIR]
+      band_class: EXTENDED_5BAND
+      rgb: true
+      thermal: false
+      thermal_variant: Sentera 6X Thermal (FLIR Boson 640)
+    calibration:
+      software: Pix4Dfields
+      calibration_type: absolute
+      notes: >
+        Fabrika kalibrasyonlu; ILS + reflectance panel ile radyometrik doğruluk sağlanır.
+        Blue bant (475 nm ±30 nm).
+    pix4d_template: dji_m350_sentera_6x
+    red_edge_wavelength_nm: 717
+
+  - drone_type: WINGTRAONE_GEN2_MICASENSE_REDEDGE_P
+    manufacturer: Wingtra + MicaSense
+    model: WingtraOne Gen II + MicaSense RedEdge-P
+    platform: fixed_wing_vtol
+    status: active
+    primary: false
+    sensor:
+      name: MicaSense RedEdge-P
+      bands: [BLUE, GREEN, RED, RED_EDGE, NIR]
+      band_class: EXTENDED_5BAND
+      rgb: true
+      thermal: false
+    calibration:
+      software: Pix4Dfields
+      calibration_type: absolute
+      notes: >
+        DLS2 + reflectance panel ile mutlak reflektans üretir.
+        Blue bant (475 nm ±32 nm). Mutlak radyometrik tutarlılık için en güçlü seçenek.
+    pix4d_template: wingtra_micasense_rededge_p
+    red_edge_wavelength_nm: 717
+
+  - drone_type: PARROT_ANAFI_USA_SEQUOIA_PLUS
+    manufacturer: Parrot
+    model: Parrot Anafi USA + Sequoia+
+    platform: multirotor
+    status: active
+    primary: false
+    sensor:
+      name: Parrot Sequoia+
+      bands: [GREEN, RED, RED_EDGE, NIR]
+      band_class: BASIC_4BAND
+      rgb: true
+      thermal: false
+    calibration:
+      software: Pix4Dfields
+      calibration_type: absolute
+      notes: Pix4Dfields tam radyometrik kalibrasyon destekli.
+    pix4d_template: parrot_sequoia_plus
+
+  - drone_type: AGEAGLE_EBEE_X_ALTUM_PT
+    manufacturer: AgEagle + MicaSense
+    model: AgEagle eBee X + MicaSense Altum-PT
+    platform: fixed_wing
+    status: active
+    primary: false
+    sensor:
+      name: MicaSense Altum-PT
+      bands: [BLUE, GREEN, RED, RED_EDGE, NIR, LWIR]
+      band_class: EXTENDED_5BAND
+      rgb: true
+      thermal: true
+      thermal_sensor: FLIR Boson 320x256
+      thermal_wavelength: 8-14 μm
+    calibration:
+      software: Pix4Dfields
+      calibration_type: absolute
+      notes: >
+        Fabrika radyometrik kalibrasyon sertifikası + Pix4Dfields termal kalibrasyon pipeline.
+        Çıktı: radyometrik sıcaklık haritası (°C/K). Bkz. KR-084.
+    pix4d_template: ageagle_altum_pt
+    red_edge_wavelength_nm: 717
+
+# Metadata
+metadata:
+  version: "1.2.0"
+  last_updated: "2026-03-05"
+  kr_refs: ["KR-001", "KR-015", "KR-030", "KR-034"]
+  notes: >
+    Yeni drone modeli eklemek için:
+    1) Bu dosyaya yeni kayıt ekle
+    2) enums/drone_type.enum.v1.json'a enum değeri ekle
+    3) drone_capability_matrix.yaml'a bant/kapasite tanımı ekle
+    4) Pix4Dfields proje şablonu oluştur

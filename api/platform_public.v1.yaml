@@ -42,6 +42,10 @@ tags:
     description: User profile management
   - name: Pricing
     description: Pricing and subscriptions
+  - name: Payments
+    description: Payment intents and receipts (KR-033)
+  - name: Subscriptions
+    description: Seasonal package subscriptions (KR-027)
 
 paths:
   # ==================== Authentication ====================
@@ -325,6 +329,264 @@ paths:
             application/json:
               schema:
                 $ref: './components/schemas.yaml#/components/schemas/PriceBook'
+
+  # ==================== Payments (KR-033) ====================
+
+  /payments/intents:
+    post:
+      tags: [Payments]
+      summary: Create payment intent
+      description: |
+        Create new payment intent for mission or subscription.
+        Per KR-033: All state transitions via PaymentStateMachine.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [target_type, target_id, method]
+              properties:
+                target_type:
+                  type: string
+                  enum: [MISSION, SUBSCRIPTION]
+                target_id:
+                  type: string
+                method:
+                  type: string
+                  enum: [CREDIT_CARD, IBAN_TRANSFER]
+      responses:
+        '201':
+          description: Payment intent created
+          content:
+            application/json:
+              schema:
+                $ref: './components/schemas.yaml#/components/schemas/PaymentIntent'
+        '400':
+          $ref: './components/responses.yaml#/components/responses/BadRequest'
+
+  /payments/intents/{intent_id}:
+    parameters:
+      - name: intent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Payments]
+      summary: Get payment intent details
+      responses:
+        '200':
+          description: Payment intent details
+          content:
+            application/json:
+              schema:
+                $ref: './components/schemas.yaml#/components/schemas/PaymentIntent'
+        '404':
+          $ref: './components/responses.yaml#/components/responses/NotFound'
+
+  /payments/intents/{intent_id}/instructions:
+    parameters:
+      - name: intent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Payments]
+      summary: Get payment instructions
+      description: Get IBAN transfer instructions or credit card payment URL
+      responses:
+        '200':
+          description: Payment instructions
+        '404':
+          $ref: './components/responses.yaml#/components/responses/NotFound'
+
+  /payments/intents/{intent_id}/upload-receipt:
+    parameters:
+      - name: intent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Payments]
+      summary: Upload IBAN transfer receipt
+      description: |
+        Upload payment receipt for IBAN_TRANSFER method.
+        Per KR-033: Only channel for receipt upload — email is NOT supported.
+        Platform stores opaque blob ID only (PII vault responsibility).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [receipt]
+              properties:
+                receipt:
+                  type: string
+                  format: binary
+                  description: Receipt image file
+      responses:
+        '200':
+          description: Receipt uploaded successfully
+        '400':
+          $ref: './components/responses.yaml#/components/responses/BadRequest'
+        '404':
+          $ref: './components/responses.yaml#/components/responses/NotFound'
+
+  /payments/intents/{intent_id}/cancel:
+    parameters:
+      - name: intent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Payments]
+      summary: Cancel payment intent
+      description: |
+        Cancel a PAYMENT_PENDING intent.
+        Per KR-033: Only allowed from PAYMENT_PENDING state.
+      responses:
+        '200':
+          description: Payment intent cancelled
+        '400':
+          $ref: './components/responses.yaml#/components/responses/BadRequest'
+        '404':
+          $ref: './components/responses.yaml#/components/responses/NotFound'
+
+  /payments/webhook/{provider}:
+    parameters:
+      - name: provider
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Payments]
+      summary: Payment provider webhook
+      description: |
+        Receive payment confirmation from credit card provider.
+        Per KR-033: Triggers PAYMENT_PENDING → PAID transition.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed
+
+  # ==================== Subscriptions (KR-027) ====================
+
+  /subscriptions:
+    post:
+      tags: [Subscriptions]
+      summary: Create subscription (Seasonal Package)
+      description: |
+        Create new seasonal package subscription.
+        Per KR-027: Scheduler auto-creates Missions based on interval_days.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [field_id, crop_type, interval_days]
+              properties:
+                field_id:
+                  type: string
+                  format: uuid
+                crop_type:
+                  type: string
+                interval_days:
+                  type: integer
+                  minimum: 1
+                  maximum: 30
+      responses:
+        '201':
+          description: Subscription created
+        '400':
+          $ref: './components/responses.yaml#/components/responses/BadRequest'
+
+  /subscriptions/{subscription_id}:
+    parameters:
+      - name: subscription_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Subscriptions]
+      summary: Get subscription details
+      responses:
+        '200':
+          description: Subscription details
+        '404':
+          $ref: './components/responses.yaml#/components/responses/NotFound'
+
+  /subscriptions/{subscription_id}/pause:
+    parameters:
+      - name: subscription_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Subscriptions]
+      summary: Pause subscription
+      description: Pause active subscription (ACTIVE → PAUSED)
+      responses:
+        '200':
+          description: Subscription paused
+        '400':
+          $ref: './components/responses.yaml#/components/responses/BadRequest'
+
+  /subscriptions/{subscription_id}/resume:
+    parameters:
+      - name: subscription_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Subscriptions]
+      summary: Resume subscription
+      description: Resume paused subscription (PAUSED → ACTIVE)
+      responses:
+        '200':
+          description: Subscription resumed
+        '400':
+          $ref: './components/responses.yaml#/components/responses/BadRequest'
+
+  /subscriptions/{subscription_id}/cancel:
+    parameters:
+      - name: subscription_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Subscriptions]
+      summary: Cancel subscription
+      description: Cancel subscription (ACTIVE/PAUSED → CANCELLED)
+      responses:
+        '200':
+          description: Subscription cancelled
+        '400':
+          $ref: './components/responses.yaml#/components/responses/BadRequest'
 
 components:
   securitySchemes:

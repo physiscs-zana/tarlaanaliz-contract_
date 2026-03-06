@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/datasets/calibration_certificate.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/datasets/calibration_certificate.v1.schema.json",
   "title": "CalibrationCertificate",
   "description": "Kalibrasyon sertifikası — KR-018 kanonik. Radyometrik kalibrasyonun başarıyla tamamlandığının kanıtı. Training-serving parity zorunluluğu.",
   "type": "object",

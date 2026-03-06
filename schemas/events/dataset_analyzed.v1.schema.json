@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/events/dataset_analyzed.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/events/dataset_analyzed.v1.schema.json",
   "title": "DatasetAnalyzed",
   "description": "Dataset YZ analizi tamamlandı — KR-017 + KR-072.",
   "type": "object",

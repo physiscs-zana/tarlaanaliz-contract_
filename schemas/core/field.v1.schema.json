@@ -21,8 +21,7 @@
     },
     "area_hectares": {
       "type": "number",
-      "minimum": 0,
-      "exclusiveMinimum": true,
+      "exclusiveMinimum": 0,
       "description": "Field area in hectares (calculated from boundary)"
     },
     "crop_type": {

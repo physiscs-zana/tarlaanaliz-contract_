@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/enums/drone_type.enum.v1.json",
+  "$id": "https://api.tarlaanaliz.com/enums/drone_type.enum.v1.json",
   "title": "DroneType",
   "description": "Desteklenen drone/sensör kombinasyon kodları — KR-034 drone-agnostik mimari. SSOT Uyum: 1.2.0 (2026-02-24).\nBu enum drone_registry.yaml ile CI'da senkronize edilir. Yeni model eklemek için drone_registry.yaml güncellenmeli ve bu enum'a eklenmeli.",
   "type": "string",

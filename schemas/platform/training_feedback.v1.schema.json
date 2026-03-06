@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.tarlaanaliz.com/schemas/platform/training_feedback.v1.schema.json",
+  "title": "TrainingFeedback",
+  "description": "YZ eğitim geri bildirimi — KR-029/KR-032 kanonik. SSOT Uyum: 1.2.0.\nUzman düzeltmelerini YZ modeline geri beslemek için kullanılır. expert_reviews (portal UI) ve feedback_records (training pipeline) ayrımı yapılır.",
+  "type": "object",
+  "unevaluatedProperties": false,
+  "required": [
+    "feedback_id",
+    "review_id",
+    "analysis_result_id",
+    "expert_user_id",
+    "verdict",
+    "training_grade",
+    "created_at"
+  ],
+  "properties": {
+    "feedback_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Geri bildirim kaydı benzersiz kimliği (UUID v4)."
+    },
+    "review_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "İlişkili uzman inceleme kimliği. expert_reviews.review_id referansı."
+    },
+    "analysis_result_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "İncelenen analiz sonucu kimliği."
+    },
+    "expert_user_id": {
+      "type": "string",
+      "description": "İncelemeyi yapan uzmanın user_id değeri (pseudonymous — PII değil)."
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["confirmed", "corrected", "rejected", "needs_more_expert"],
+      "description": "Uzman karar formatı: confirmed (model doğru), corrected (düzeltme yapıldı), rejected (hatalı), needs_more_expert (ek uzman gerekli)."
+    },
+    "training_grade": {
+      "type": "string",
+      "enum": ["A", "B", "C", "D", "REJECT"],
+      "description": "Eğitim veri kalitesi derecelendirmesi. A=en yüksek, REJECT=eğitim için kullanılmaz."
+    },
+    "grade_reason": {
+      "type": ["string", "null"],
+      "maxLength": 200,
+      "description": "Derecelendirme gerekçesi (max 200 karakter)."
+    },
+    "correction_data": {
+      "type": ["object", "null"],
+      "description": "Uzman düzeltme verisi. verdict=corrected olduğunda doldurulur. Sınıflandırma düzeltmeleri veya GeoJSON segmentasyon verisi içerebilir.",
+      "properties": {
+        "original_class": {
+          "type": ["string", "null"],
+          "description": "Modelin orijinal sınıflandırma çıktısı."
+        },
+        "corrected_class": {
+          "type": ["string", "null"],
+          "description": "Uzmanın düzelttiği sınıflandırma."
+        },
+        "correction_geometry": {
+          "type": ["object", "null"],
+          "description": "GeoJSON geometri (segmentasyon düzeltmesi için)."
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "field_id": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "İlişkili tarla kimliği."
+    },
+    "mission_id": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "İlişkili görev kimliği."
+    },
+    "analysis_type": {
+      "$ref": "../../enums/analysis_type.enum.v1.json",
+      "description": "İncelenen analiz tipi."
+    },
+    "model_version": {
+      "type": ["string", "null"],
+      "description": "İncelenen modelin versiyonu."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Geri bildirim oluşturulma zamanı (ISO 8601)."
+    }
+  },
+  "x-export-formats": {
+    "classification": {
+      "file": "training_feedback_cls_v1.jsonl",
+      "schema": "training.feedback.cls.v1",
+      "format": "JSONL — her satır bir JSON örneği"
+    },
+    "segmentation": {
+      "file": "training_feedback_geo_v1.geojson",
+      "schema": "training.feedback.geo.v1",
+      "format": "GeoJSON FeatureCollection"
+    }
+  },
+  "x-api-endpoints": [
+    "POST /admin/training/export"
+  ],
+  "x-kr-ref": ["KR-029", "KR-032"],
+  "x-ssot-version": "1.2.0",
+  "x-updated": "2026-02-24"
+}

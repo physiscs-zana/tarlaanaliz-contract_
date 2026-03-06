@@ -1,5 +1,4 @@
 {
-  "_comment": "Örnek: IBAN_TRANSFER ile Sezonluk Paket ödemesi — PAYMENT_PENDING durumu. schemas/platform/payment_intent.v2.schema.json",
   "intent_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "payer_user_id": "usr_7f3a9b2c1d4e5f6a",
   "target_type": "SUBSCRIPTION",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/datasets/dataset_manifest.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/datasets/dataset_manifest.v1.schema.json",
   "title": "DatasetManifest",
   "description": "Dataset dosya manifest'i — KR-072 kanonik. Dataset içindeki tüm dosyaların hash, boyut ve metadata bilgilerini içerir. Hash sealing ve doğrulama için kullanılır.",
   "type": "object",

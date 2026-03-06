@@ -11,7 +11,8 @@
     "FUNGUS",
     "WEED",
     "WATER_STRESS",
-    "NITROGEN_STRESS"
+    "NITROGEN_STRESS",
+    "THERMAL_STRESS"
   ],
   "metadata": {
     "version": "1.0.0",
@@ -59,6 +60,12 @@
         "color": "Soluk gri (Light gray)",
         "pattern": "Çapraz çizgili desen (Cross-hatched pattern)",
         "kr002": "Azot Stresi: Soluk gri + çapraz çizgili desen"
+      },
+      "THERMAL_STRESS": {
+        "description": "Termal stres katmanı — sulama/su stresi sıcaklık delta analizi",
+        "color": "Koyu Kırmızı/Turuncu gradient (Dark Red/Orange gradient)",
+        "pattern": "Isı haritası + termometre ikon (Heatmap + thermometer icon)",
+        "kr002": "Termal Stres (KR-084): Koyu Kırmızı/Turuncu gradient + ısı haritası"
       }
     },
     "analysisCategories": {
@@ -71,9 +78,10 @@
           "FUNGUS",
           "WEED",
           "WATER_STRESS",
-          "NITROGEN_STRESS"
+          "NITROGEN_STRESS",
+          "THERMAL_STRESS"
         ],
-        "krReference": "KR-002"
+        "krReference": "KR-002, KR-064, KR-084"
       }
     },
     "analysisDescriptions": {
@@ -132,6 +140,14 @@
         "pattern": "Cross-hatched",
         "outputType": "map_layer",
         "krReference": "KR-002"
+      },
+      "THERMAL_STRESS": {
+        "fullName": "Termal Stres Katmanı (Thermal Stress Layer)",
+        "description": "Thermal stress detection via LWIR band — canopy temperature, CWSI, irrigation efficiency",
+        "color": "Dark Red/Orange gradient",
+        "pattern": "Heatmap + thermometer icon",
+        "outputType": "raster_heatmap",
+        "krReference": "KR-002, KR-064, KR-084"
       }
     },
     "displayNames": {
@@ -142,7 +158,8 @@
         "FUNGUS": "Mantar",
         "WEED": "Yabancı Ot",
         "WATER_STRESS": "Su Stresi",
-        "NITROGEN_STRESS": "Azot Stresi"
+        "NITROGEN_STRESS": "Azot Stresi",
+        "THERMAL_STRESS": "Termal Stres"
       },
       "en": {
         "HEALTH": "Health",
@@ -151,7 +168,8 @@
         "FUNGUS": "Fungus",
         "WEED": "Weed",
         "WATER_STRESS": "Water Stress",
-        "NITROGEN_STRESS": "Nitrogen Stress"
+        "NITROGEN_STRESS": "Nitrogen Stress",
+        "THERMAL_STRESS": "Thermal Stress"
       }
     }
   },

@@ -113,7 +113,8 @@
         {
           "$ref": "#/$defs/GeometryCollection"
         }
-      ]
+      ],
+      "unevaluatedProperties": false
     },
     "Point": {
       "type": "object",

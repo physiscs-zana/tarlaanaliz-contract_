@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/schemas/datasets/dataset.v1.schema.json",
+  "$id": "https://api.tarlaanaliz.com/schemas/datasets/dataset.v1.schema.json",
   "title": "Dataset",
   "description": "Dataset ana varlık şeması — KR-072 kanonik. Bir uçuş görevinden (Mission) toplanan ham veya işlenmiş veri paketini temsil eder.",
   "type": "object",

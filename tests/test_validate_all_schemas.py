@@ -162,27 +162,27 @@ class TestSchemaValidation:
     
     @pytest.mark.parametrize("enum_file", [
         pytest.param(f, id=str(f.relative_to(Path(__file__).parent.parent)))
-        for f in (Path(__file__).parent.parent / "schemas" / "enums").rglob("*.json")
+        for f in (Path(__file__).parent.parent / "enums").rglob("*.json")
     ])
     def test_enum_has_unique_values(self, enum_file: Path):
         """Test that enum values are unique"""
         with open(enum_file, 'r', encoding='utf-8') as f:
             schema = json.load(f)
-        
+
         if 'enum' in schema:
             values = schema['enum']
             assert len(values) == len(set(values)), \
                 f"Duplicate enum values in {enum_file}"
-        
+
         # Check values in metadata
         if 'values' in schema:
             value_codes = [v.get('value') for v in schema['values'] if 'value' in v]
             assert len(value_codes) == len(set(value_codes)), \
                 f"Duplicate value codes in {enum_file} metadata"
-    
+
     @pytest.mark.parametrize("enum_file", [
         pytest.param(f, id=str(f.relative_to(Path(__file__).parent.parent)))
-        for f in (Path(__file__).parent.parent / "schemas" / "enums").rglob("*.json")
+        for f in (Path(__file__).parent.parent / "enums").rglob("*.json")
     ])
     def test_enum_metadata_complete(self, enum_file: Path):
         """Test that enum metadata is complete"""
@@ -194,9 +194,9 @@ class TestSchemaValidation:
                 assert 'value' in value, f"Missing 'value' in {enum_file} metadata"
                 assert 'description' in value, f"Missing 'description' for {value.get('value')} in {enum_file}"
     
-    def test_crop_type_enum_has_9_values(self, schemas_dir: Path):
+    def test_crop_type_enum_has_9_values(self, base_dir: Path):
         """Test that crop_type enum has exactly 9 supported crops (KR-002)"""
-        crop_file = schemas_dir / "enums" / "crop_type.enum.v1.json"
+        crop_file = base_dir / "enums" / "crop_type.enum.v1.json"
         
         with open(crop_file, 'r', encoding='utf-8') as f:
             schema = json.load(f)
@@ -211,32 +211,34 @@ class TestSchemaValidation:
         assert actual_crops == expected_crops, \
             f"Expected 9 supported crops: {expected_crops}, got: {actual_crops}"
     
-    def test_analysis_type_enum_has_7_values(self, schemas_dir: Path):
-        """Test that analysis_type enum has exactly 7 KR-002 map layers"""
-        analysis_file = schemas_dir / "enums" / "analysis_type.enum.v1.json"
-        
+    def test_analysis_type_enum_has_8_values(self, base_dir: Path):
+        """Test that analysis_type enum has exactly 8 KR-002/KR-064/KR-084 map layers"""
+        analysis_file = base_dir / "enums" / "analysis_type.enum.v1.json"
+
         with open(analysis_file, 'r', encoding='utf-8') as f:
             schema = json.load(f)
-        
+
         expected_types = {
             'HEALTH', 'DISEASE', 'PEST', 'FUNGUS',
-            'WEED', 'WATER_STRESS', 'NITROGEN_STRESS'
+            'WEED', 'WATER_STRESS', 'NITROGEN_STRESS', 'THERMAL_STRESS'
         }
-        
+
         actual_types = set(schema.get('enum', []))
-        
+
         assert actual_types == expected_types, \
-            f"Expected 7 KR-002 analysis types: {expected_types}, got: {actual_types}"
+            f"Expected 8 KR-002/KR-064/KR-084 analysis types: {expected_types}, got: {actual_types}"
     
     def test_phone_pattern_is_10_digits(self, schemas_dir: Path):
         """Test that user_pii phone pattern is 10 digits (KR-050)"""
         pii_file = schemas_dir / "core" / "user_pii.v1.schema.json"
-        
+
         with open(pii_file, 'r', encoding='utf-8') as f:
             schema = json.load(f)
-        
-        phone_pattern = schema['properties']['phone']['pattern']
-        
+
+        # Phone is a $ref to $defs/Phone; the E.164 pattern is on the e164 field
+        phone_def = schema['$defs']['Phone']
+        phone_pattern = phone_def['properties']['e164']['pattern']
+
         # Pattern should be: ^\+90[1-9][0-9]{9}$
         assert phone_pattern == r'^\+90[1-9][0-9]{9}$', \
             f"Phone pattern must be 10 digits, got: {phone_pattern}"
@@ -303,9 +305,9 @@ class TestSchemaStructure:
         assert shared_dir.exists(), "schemas/shared/ directory not found"
     
     def test_has_enums_directory(self):
-        """Test that enums/ directory exists"""
-        enums_dir = Path(__file__).parent.parent / "schemas" / "enums"
-        assert enums_dir.exists(), "schemas/enums/ directory not found"
+        """Test that enums/ directory exists (at project root, not schemas/)"""
+        enums_dir = Path(__file__).parent.parent / "enums"
+        assert enums_dir.exists(), "enums/ directory not found"
     
     def test_has_core_directory(self):
         """Test that core/ directory exists"""
