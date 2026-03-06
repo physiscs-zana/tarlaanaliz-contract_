@@ -96,7 +96,7 @@ class TestBreakingChangeDetector:
             
             # Import detector
             import sys
-            sys.path.insert(0, str(self.base_dir / "tools"))
+            sys.path.insert(0, str(Path(__file__).parent.parent / "tools"))
             from breaking_change_detector import BreakingChangeDetector
             
             # Detect changes
@@ -357,13 +357,13 @@ class TestVersionBumpPolicy:
     
     def test_versioning_policy_exists(self, base_dir: Path):
         """Test that versioning_policy.md exists"""
-        policy_file = base_dir / "versioning_policy.md"
-        assert policy_file.exists(), "versioning_policy.md not found"
-        assert policy_file.is_file(), "versioning_policy.md is not a file"
-    
+        policy_file = base_dir / "docs" / "versioning_policy.md"
+        assert policy_file.exists(), "docs/versioning_policy.md not found"
+        assert policy_file.is_file(), "docs/versioning_policy.md is not a file"
+
     def test_versioning_policy_has_semver_rules(self, base_dir: Path):
         """Test that versioning policy documents semver rules"""
-        policy_file = base_dir / "versioning_policy.md"
+        policy_file = base_dir / "docs" / "versioning_policy.md"
         
         with open(policy_file, 'r', encoding='utf-8') as f:
             content = f.read().lower()

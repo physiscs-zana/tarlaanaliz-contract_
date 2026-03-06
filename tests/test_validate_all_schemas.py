@@ -162,27 +162,27 @@ class TestSchemaValidation:
     
     @pytest.mark.parametrize("enum_file", [
         pytest.param(f, id=str(f.relative_to(Path(__file__).parent.parent)))
-        for f in (Path(__file__).parent.parent / "schemas" / "enums").rglob("*.json")
+        for f in (Path(__file__).parent.parent / "enums").rglob("*.json")
     ])
     def test_enum_has_unique_values(self, enum_file: Path):
         """Test that enum values are unique"""
         with open(enum_file, 'r', encoding='utf-8') as f:
             schema = json.load(f)
-        
+
         if 'enum' in schema:
             values = schema['enum']
             assert len(values) == len(set(values)), \
                 f"Duplicate enum values in {enum_file}"
-        
+
         # Check values in metadata
         if 'values' in schema:
             value_codes = [v.get('value') for v in schema['values'] if 'value' in v]
             assert len(value_codes) == len(set(value_codes)), \
                 f"Duplicate value codes in {enum_file} metadata"
-    
+
     @pytest.mark.parametrize("enum_file", [
         pytest.param(f, id=str(f.relative_to(Path(__file__).parent.parent)))
-        for f in (Path(__file__).parent.parent / "schemas" / "enums").rglob("*.json")
+        for f in (Path(__file__).parent.parent / "enums").rglob("*.json")
     ])
     def test_enum_metadata_complete(self, enum_file: Path):
         """Test that enum metadata is complete"""
@@ -231,12 +231,14 @@ class TestSchemaValidation:
     def test_phone_pattern_is_10_digits(self, schemas_dir: Path):
         """Test that user_pii phone pattern is 10 digits (KR-050)"""
         pii_file = schemas_dir / "core" / "user_pii.v1.schema.json"
-        
+
         with open(pii_file, 'r', encoding='utf-8') as f:
             schema = json.load(f)
-        
-        phone_pattern = schema['properties']['phone']['pattern']
-        
+
+        # Phone is a $ref to $defs/Phone; the E.164 pattern is on the e164 field
+        phone_def = schema['$defs']['Phone']
+        phone_pattern = phone_def['properties']['e164']['pattern']
+
         # Pattern should be: ^\+90[1-9][0-9]{9}$
         assert phone_pattern == r'^\+90[1-9][0-9]{9}$', \
             f"Phone pattern must be 10 digits, got: {phone_pattern}"

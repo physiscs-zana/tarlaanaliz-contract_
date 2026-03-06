@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "tarlaanaliz/enums/dataset_status.enum.v1.json",
+  "$id": "https://api.tarlaanaliz.com/enums/dataset_status.enum.v1.json",
   "title": "DatasetStatus",
   "description": "Dataset yaşam döngüsü durumu — KR-072 kanonik. SSOT Uyum: 1.2.0 (2026-02-24).\nDataset, edge kiosk'tan platforma ve worker'a kadar tüm aşamalarda bu durum değerlerinden birini taşır.",
   "type": "string",

@@ -81,7 +81,8 @@
           ],
           "format": "uri-reference"
         }
-      }
+      },
+      "unevaluatedProperties": false
     }
   },
   "x-kr-ref": [

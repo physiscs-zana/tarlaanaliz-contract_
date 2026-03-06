@@ -1,5 +1,4 @@
 {
-  "_comment": "Örnek: CREDIT_CARD ile tek seferlik Mission ödemesi — webhook ile otomatik PAID. schemas/platform/payment_intent.v2.schema.json",
   "intent_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
   "payer_user_id": "usr_3a5b7c9d1e2f4a6b",
   "target_type": "MISSION",
