@@ -1,5 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.tarlaanaliz.com/enums/user_role.enum.v1.json",
   "title": "UserRole",
   "description": "DEPRECATED: role.enum.v1.json kullanın. Legacy RBAC roller (KR-063). Draft 2020-12 uyumlu hale getirildi.",
   "type": "string",

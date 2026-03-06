@@ -7,7 +7,7 @@
 
 ## KR Domain Paketleri İndeksi (Navigasyon)
 
-**Not:** Bu bölüm sadece navigasyon içindir. Normatif metin `docs/ssot/kr_registry.md`'dedir.
+**Not:** Bu bölüm sadece navigasyon içindir. Normatif metin `ssot/kr_registry.md`'dedir.
 
 ### A) Security & Isolation
 - KR-070 — Worker Isolation & Egress Policy
@@ -46,11 +46,14 @@ Bu doküman, `tarlaanaliz-contracts` tarafında API/JSON Schema sözleşmelerini
 | [KR-029](kr_registry.md#kr-029) | YZ Eğitim Geri Bildirimi (Training Feedback Loop) | Uzman düzeltmelerini modele geri beslemek |
 | [KR-032](kr_registry.md#kr-032) | Training Export Standardı | Uzman feedback'lerini standart formatta export |
 | [KR-033](kr_registry.md#kr-033) | Ödeme ve Manuel Onay | Sezonluk Paket + tek seferlik Mission; PAID kanonik; PaymentStateMachine bypass yasak |
+| [KR-040](kr_registry.md#kr-040) | Güvenlik Kabul Kriterleri (SDLC) | Defense-in-depth; PR/CI/Release/Ops kapıları tüm bileşenleri kapsar |
 | [KR-041](kr_registry.md#kr-041) | SDLC Kapıları (Gate) | Contracts pinleme: CONTRACTS_VERSION + SHA256; breaking-change kontrolü |
 | [KR-043](kr_registry.md#kr-043) | Test Checklist (Senaryo Bazlı) | Senaryo bazlı kabul kriterleri |
 | [KR-072](kr_registry.md#kr-072) | Dataset Lifecycle + Kanıt Zinciri | Dataset state machine + manifest/hash/signature + AV1/AV2 |
 | [KR-073](kr_registry.md#kr-073) | Untrusted File Handling + Malware | Sandbox parse; iki aşamalı tarama; quarantine |
+| [KR-080](kr_registry.md#kr-080) | Ana İş Akışları Teknik Kurallar | Teknik spesifikasyonda eklenen/sertleştirilen kurallar |
 | [KR-081](kr_registry.md#kr-081) | Contract-First / Schema Gates (CI) | JSON Schema + örnekler + CI doğrulama |
+| [KR-084](kr_registry.md#kr-084) | Termal Veri İşleme ve Sulama Stresi | LWIR bant → termal pipeline; CWSI, canopy temp; THERMAL_STRESS LayerCode |
 
 ---
 
@@ -68,7 +71,7 @@ Bu doküman, `tarlaanaliz-contracts` tarafında API/JSON Schema sözleşmelerini
 
 - **Amaç:** Sezonluk Paket Subscription ve tek seferlik Mission ödemelerini kontratlaştırmak.
 - **Şemalar:** `schemas/platform/payment_intent.v2.schema.json` (kanonik), `payment_intent.v1.schema.json` (deprecated)
-- **Enumlar:** `enums/payment_status.v2.json`, `enums/payment_method.v1.json`
+- **Enumlar:** `enums/payment_status.enum.v2.json`, `enums/payment_method.enum.v1.json`
 - **Hard gate:** `PaymentIntent.status == PAID` olmadan Mission ASSIGNED veya Subscription ACTIVE olamaz.
 - **Kanonik durum:** `PAID` — `APPROVED` kullanılmaz.
 - **Otomatik expire:** YOK — `PAYMENT_PENDING` admin kararıyla `CANCELLED` yapılır.
@@ -107,3 +110,16 @@ Bu doküman, `tarlaanaliz-contracts` tarafında API/JSON Schema sözleşmelerini
 - **scan_report.v1 (zorunlu alanlar):** engine_id, signatures_version, started_at/ended_at, scanned_files[{path,size,sha256}], result(PASS/FAIL), findings[], quarantined
 - **verification_report.v1 (zorunlu alanlar):** manifest_hash, computed_hashes, mismatches[], decision(ACCEPT/REJECT), reason
 - **Hard gate:** PASS olmadan dataset durum ilerleyemez; decision REJECT → `REJECTED_QUARANTINE`.
+
+---
+
+### KR-084 — Termal Veri İşleme ve Sulama Stresi Analizi
+
+- **Amaç:** LWIR bant mevcut olduğunda sulama stresi analizi; yoksa graceful degradation.
+- **Şemalar:** `schemas/worker/thermal_analysis_result.v1.schema.json` (kanonik)
+- **Tetikleme koşulu:** `intake_manifest.available_bands[]` içinde `LWIR` bant tanımı varsa termal pipeline etkinleşir.
+- **Termal kalibrasyon kanıtı:** `calibration_result.json` içinde `thermal_calibration` bölümünde tutulur.
+- **Çıktılar:** Canopy sıcaklık haritası (°C), CWSI (0.0–1.0), canopy-soil sıcaklık deltası, sulama etkinliği göstergesi.
+- **Katman kodu:** `THERMAL_STRESS` (KR-064 Layer Registry).
+- **Hata modları:** Kalibrasyon kanıtı eksik → `THERMAL.QC_FAIL` → termal pipeline devre dışı, MS pipeline normal devam.
+- **Cross-refs:** [KR-018/KR-082] (radyometri), [KR-017] (şemsiye), [KR-072] (dataset lifecycle), [KR-064] (layer registry)

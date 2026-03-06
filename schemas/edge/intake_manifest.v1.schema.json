@@ -70,19 +70,7 @@
       "description": "AV tarama sonucu (AV1 — edge taraması). av_scan_result olmadan batch RELEASE edilemez."
     },
     "dataset_status": {
-      "type": "string",
-      "enum": [
-        "RAW_INGESTED",
-        "RAW_SCANNED_EDGE_OK",
-        "RAW_HASH_SEALED",
-        "CALIBRATED",
-        "CALIBRATED_SCANNED_CENTER_OK",
-        "DISPATCHED_TO_WORKER",
-        "ANALYZED",
-        "DERIVED_PUBLISHED",
-        "ARCHIVED",
-        "REJECTED_QUARANTINE"
-      ],
+      "$ref": "../../enums/dataset_status.enum.v1.json",
       "description": "Dataset yaşam döngüsü durumu. KR-072 state machine. İstasyon tarafı: RAW_INGESTED → RAW_SCANNED_EDGE_OK → RAW_HASH_SEALED."
     },
     "available_bands": {
@@ -168,7 +156,8 @@
               "file": { "type": "string" },
               "threat_name": { "type": "string" },
               "threat_type": { "$ref": "../../enums/threat_type.enum.v1.json" }
-            }
+            },
+            "unevaluatedProperties": false
           }
         },
         "quarantined": {

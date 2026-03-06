@@ -27,6 +27,7 @@ These examples serve multiple purposes:
 | `payment_intent_creditcard_paid.example.json` | `platform/payment_intent.v2.schema.json` | Credit card payment (PAID) |
 | `payment_intent_iban_paid.example.json` | `platform/payment_intent.v2.schema.json` | IBAN transfer payment (PAID) |
 | `payment_intent_iban_pending.example.json` | `platform/payment_intent.v2.schema.json` | IBAN transfer payment (PENDING) |
+| `thermal_analysis_result.example.json` | `worker/thermal_analysis_result.v1.schema.json` | Thermal analysis result (KR-084) |
 
 ---
 

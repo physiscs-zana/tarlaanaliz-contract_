@@ -87,12 +87,12 @@
 | [KR-030](#kr-030) | Notlar, Sınırlar ve Uyum | edge-kiosk, worker | SSOT, KANONIK, DEV | **Drone standardı:** Drone-agnostik mimari. Desteklenen modeller drone_registry.yaml'a kayıtlı olmalıdır (DJI Mavic 3M birincil/önerilen; M350 RTK+Sentera 6X, WingtraOne Gen II+MicaSense RedEdge-P, Parrot Anafi USA+Sequoia+, AgEagle eBee X+Altum-PT). Bkz. KR-034 (DJI bağımsızlık planı). |
 | [KR-031](#kr-031) | Pilot Hakediş ve Ödeme Politikası | platform | SSOT, KANONIK | Pilotlar, bir ay içinde **ONAYLANMIŞ** görevlerde taradıkları alan üzerinden hakediş kazanır |
 | [KR-032](#kr-032) | Training Export Standardı | contracts, platform, worker | SSOT, KANONIK, DEV | *Amaç:** Uzman feedback'lerini standart formatta export ederek model eğitim pipeline'ına aktarmak. |
-| [KR-033](#kr-033) | Ödeme ve Manuel Onay (Müşteri Tahsilat Akışı) | platform, worker | SSOT, KANONIK | **Amaç:** Tek seferlik Mission veya **Sezonluk Paket Subscription** taleplerinde tahsilat standartlaştırma. Durum: `PAYMENT_PENDING`→`PAID`/`REJECTED`/`CANCELLED`; `PAID`→`REFUNDED`. Otomatik expire yoktur. IBAN dekont uygulama içi yüklenir. |
+| [KR-033](#kr-033) | Ödeme ve Manuel Onay (Müşteri Tahsilat Akışı) | contracts, platform, worker | SSOT, KANONIK | **Amaç:** Tek seferlik Mission veya **Sezonluk Paket Subscription** taleplerinde tahsilat standartlaştırma. Durum: `PAYMENT_PENDING`→`PAID`/`REJECTED`/`CANCELLED`; `PAID`→`REFUNDED`. Otomatik expire yoktur. IBAN dekont uygulama içi yüklenir. |
 | [KR-040](#kr-040) | Güvenlik Kabul Kriterleri/Test Checklist (SDLC Entegrasyonu) | contracts, edge-kiosk, platform, worker | SSOT, KANONIK | **Amaç:** TXT repo mantalitesindeki savunma-derinliği (defense-in-depth) güvenlik yaklaşımını, ölçülebilir kabul kriterlerine ve SDLC kapılarına (PR/CI/Release/Ops) bağlamak. PR/CI/Release/Ops kapıları tüm bileşenleri kapsar. |
 | [KR-041](#kr-041) | SDLC Kapıları (Gate) - Zorunlu Kontroller | contracts, edge-kiosk, platform, worker | SSOT, KANONIK | Contracts pinleme: CONTRACTS_VERSION (SemVer) + CONTRACTS_SHA256 zorunlu; değişiklikte breaking-change kontrolü |
 | [KR-042](#kr-042) | Kabul Kriterleri Matrisi | edge-kiosk, platform, worker | SSOT, KANONIK | \| Güvenlik Katmanı \| Kabul Kriteri (DoD) \| Test Kanıtı \| SDLC Gate \| |
 | [KR-043](#kr-043) | Test Checklist (Senaryo Bazlı) | contracts, edge-kiosk, platform, worker | SSOT, KANONIK | \| Senaryo \| Adımlar (özet) \| Beklenen Sonuç \| Kanıt/Artefakt \| |
-| [KR-050](#kr-050) | Kimlik Doğrulama ve Üyelik Akışı (Sade Model) | worker | SSOT, KANONIK | Kimlik bilgisi olarak yalnızca **Telefon Numarası** kullanılır (E-posta ve TCKN **toplanmaz**) |
+| [KR-050](#kr-050) | Kimlik Doğrulama ve Üyelik Akışı (Sade Model) | contracts, worker | SSOT, KANONIK | Kimlik bilgisi olarak yalnızca **Telefon Numarası** kullanılır (E-posta ve TCKN **toplanmaz**) |
 | [KR-060](#kr-060) | Ürün/Teknik Spesifikasyondan Normatif | platform | SSOT, KANONIK |  |
 | [KR-061](#kr-061) | Amaç ve Sabit Çerçeve | platform, worker | SSOT, KANONIK | Drone-agnostik mimari. DJI Mavic 3M birincil/önerilen; desteklenen diğer modeller drone_registry.yaml'a kayıtlıdır. Bkz. KR-001 (radyometri notu) ve KR-034 (DJI bağımsızlık planı). |
 | [KR-062](#kr-062) | Tasarım İlkeleri | edge-kiosk, platform, worker | SSOT, KANONIK | 1. **Tek kaynak gerçek:** API ve veri modeli. Web (PWA) iş kuralı kopyalamaz. |
@@ -103,7 +103,7 @@
 | [KR-070](#kr-070) | YZ Analiz İzolasyonu (Worker Isolation) | worker | SSOT, KANONIK | Inbound kapalı; egress allowlist; job pull; calibrated+evidence hard gate |
 | [KR-071](#kr-071) | Tek Yönlü Veri Akışı + Allowlist Yerleşimi | edge-kiosk, platform, worker | SSOT, KANONIK | Allowlist Ingress’te; mTLS ana kontrol; akış Edge→Platform→Storage/Queue→Worker→Platform→Web |
 | [KR-072](#kr-072) | Dataset Lifecycle + Kanıt Zinciri (Contract-First) | contracts, edge-kiosk, platform, worker | SSOT, KANONIK | Dataset state machine + manifest/hash/signature + AV1/AV2 + verification |
-| [KR-073](#kr-073) | Untrusted File Handling + Malware (AV1/AV2) | edge-kiosk, platform, worker | SSOT, KANONIK | Sandbox parse/convert; iki aşamalı tarama; şüphelide quarantine |
+| [KR-073](#kr-073) | Untrusted File Handling + Malware (AV1/AV2) | contracts, edge-kiosk, platform, worker | SSOT, KANONIK | Sandbox parse/convert; iki aşamalı tarama; şüphelide quarantine |
 | [KR-080](#kr-080) | Ana İş Akışları için Teknik Kurallar | contracts, edge-kiosk, platform, worker | SSOT, KANONIK | Bu bölüm; ana iş akışlarının iş planı anlatısında zaten bulunan kısımlarını tekrar etmez. Sadece teknik spesifikasyonda eklenen/sertleştirilen kuralları listeler. |
 | [KR-081](#kr-081) | Kontrat Şemaları (Contract-First) — Kanonik JSON Schema | contracts, edge-kiosk, platform, worker | SSOT, KANONIK, DEV | *Amaç:** "olmalı" seviyesinden çıkıp, kodlamadan önce ortak dilin **makine-doğrulanabilir** (machine-verifiable) hale gelmesi. |
 | [KR-082](#kr-082) | RADIOMETRY / Radyometrik Kalibrasyon (Uyumluluk Etiketi) | contracts, edge-kiosk, platform, worker | SSOT, KANONIK, DEV | Bu madde, **[KR-018] Tam Radyometrik Kalibrasyon Zorunluluğu** ile **aynı zorunluluğu** “KR-082” etiketiyle de referanslayabilmek için eklenmiştir. |
@@ -515,8 +515,8 @@
 ---
 ### KR-033
 
-**Başlık:** Ödeme ve Manuel Onay (Müşteri Tahsilat Akışı)  
-**Applies to:** platform, worker  
+**Başlık:** Ödeme ve Manuel Onay (Müşteri Tahsilat Akışı)
+**Applies to:** contracts, platform, worker
 **Kaynaklar:** SSOT, KANONIK
 
 **Normatif özet:** **Amaç:** Tek seferlik Mission veya **Sezonluk Paket Subscription** taleplerinde tahsilat standartlaştırma. Durum: `PAYMENT_PENDING`→`PAID`/`REJECTED`/`CANCELLED`; `PAID`→`REFUNDED`. Otomatik expire yoktur. IBAN dekont uygulama içi yüklenir; e-posta kanal değildir. Tüm geçişler `PaymentStateMachine` üzerinden — bypass yasaktır.
@@ -590,8 +590,8 @@
 ---
 ### KR-050
 
-**Başlık:** Kimlik Doğrulama ve Üyelik Akışı (Sade Model)  
-**Applies to:** worker  
+**Başlık:** Kimlik Doğrulama ve Üyelik Akışı (Sade Model)
+**Applies to:** contracts, worker
 **Kaynaklar:** SSOT, KANONIK
 
 **Normatif özet:** Kimlik bilgisi olarak yalnızca **Telefon Numarası** kullanılır (E-posta ve TCKN **toplanmaz**)
@@ -862,7 +862,7 @@ Hata/şüphe: `REJECTED_QUARANTINE`
 ### KR-073
 
 **Başlık:** Untrusted File Handling + AV1/AV2 + Sandbox Dönüştürme
-**Kapsam / Applies-to:** edge-kiosk, platform, worker
+**Kapsam / Applies-to:** contracts, edge-kiosk, platform, worker
 
 **1) Amaç**
 - (Kanonik) Güvenlik ve veri akışı kuralını test edilebilir hale getirmek.

@@ -54,8 +54,10 @@
       "description": "Crop Water Stress Index — 0.0 (stressiz) — 1.0 (tam stres) normalize indeks."
     },
     "canopy_soil_delta": {
-      "type": ["object", "null"],
-      "$ref": "#/$defs/ThermalLayer",
+      "oneOf": [
+        { "$ref": "#/$defs/ThermalLayer" },
+        { "type": "null" }
+      ],
       "description": "Bitki örtüsü ile toprak yüzeyi arasındaki sıcaklık farkı haritası (°C)."
     },
     "irrigation_efficiency": {
